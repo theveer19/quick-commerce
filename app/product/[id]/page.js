@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, ShieldCheck, Truck, RefreshCw, Check } from 'lucide-react';
+import { Star, ShieldCheck, Truck, RefreshCw, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { fetchProduct } from '@/lib/data';
 import { useCart } from '@/lib/cart';
 import { inr, cx } from '@/lib/format';
@@ -45,12 +45,7 @@ export default function ProductPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="text-sm text-muted mb-4">Home / Products / {p.name}</div>
       <div className="grid gap-10 md:grid-cols-2">
-        <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-          className="relative aspect-[3/4] rounded-[1.5rem] overflow-hidden border border-line bg-surface">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={p.image} alt={p.name} className="h-full w-full object-cover" />
-          {off > 0 && <span className="absolute top-4 left-4 bg-rose text-white text-sm font-bold px-3 py-1 rounded-full">{off}% OFF</span>}
-        </motion.div>
+        <Gallery images={(p.images && p.images.length ? p.images : [p.image]).filter(Boolean)} name={p.name} off={off} />
 
         <div>
           <div className="flex items-center gap-2 text-sm text-muted">
@@ -120,6 +115,42 @@ export default function ProductPage() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function Gallery({ images, name, off }) {
+  const [active, setActive] = useState(0);
+  const list = images.length ? images : [''];
+  const go = (d) => setActive((a) => (a + d + list.length) % list.length);
+  return (
+    <div>
+      <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
+        className="relative aspect-[3/4] rounded-[1.5rem] overflow-hidden border border-line bg-surface">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={list[active]} alt={name} className="h-full w-full object-cover" />
+        {off > 0 && <span className="absolute top-4 left-4 bg-rose text-white text-sm font-bold px-3 py-1 rounded-full">{off}% OFF</span>}
+        {list.length > 1 && (
+          <>
+            <button onClick={() => go(-1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur grid place-items-center shadow-soft hover:bg-white"><ChevronLeft size={20} className="text-ivory" /></button>
+            <button onClick={() => go(1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/80 backdrop-blur grid place-items-center shadow-soft hover:bg-white"><ChevronRight size={20} className="text-ivory" /></button>
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
+              {list.map((_, i) => <span key={i} className={cx('h-1.5 rounded-full transition-all', i === active ? 'w-5 bg-white' : 'w-1.5 bg-white/60')} />)}
+            </div>
+          </>
+        )}
+      </motion.div>
+      {list.length > 1 && (
+        <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
+          {list.map((url, i) => (
+            <button key={i} onClick={() => setActive(i)} className={cx('shrink-0 w-16 h-20 rounded-xl overflow-hidden border-2 transition', i === active ? 'border-rose' : 'border-line hover:border-violet')}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={url} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

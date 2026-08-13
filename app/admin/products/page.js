@@ -9,7 +9,7 @@ import { inr, cx } from '@/lib/format';
 const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || 'dxs0l9l3c';
 const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || 'onet_products';
 
-const blank = { name: '', category: 'women', subcategory: '', price: '', mrp: '', stock: '', sizes: '', colors: '', image: '', description: '', is_active: true };
+const blank = { name: '', category: 'women', subcategory: '', price: '', mrp: '', stock: '', sizes: '', colors: '', image: '', images: [], description: '', is_active: true };
 
 export default function AdminProducts() {
   const [list, setList] = useState(null);
@@ -126,7 +126,8 @@ function ProductModal({ initial, onClose, onSaved }) {
           const [name, hex] = t.split(':').map((x) => x.trim());
           return { name: name || 'Color', hex: hex || '#cccccc' };
         }),
-        image: form.image || 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80',
+        images: Array.isArray(form.images) ? form.images.filter(Boolean) : [],
+        image: (Array.isArray(form.images) && form.images.filter(Boolean)[0]) || form.image || 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80',
         is_active: form.is_active !== false,
       };
       if (!payload.id) delete payload.id;
@@ -155,9 +156,12 @@ function ProductModal({ initial, onClose, onSaved }) {
           <input value={form.subcategory || ''} onChange={set('subcategory')} placeholder="e.g. Kurti" className="mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet" />
         </label>
         <div className="block sm:col-span-2">
-          <span className="text-xs text-muted">Product image</span>
+          <span className="text-xs text-muted">Product images (first = main, upload multiple)</span>
           <div className="mt-1">
-            <ImageUpload value={form.image} onUploaded={(url) => setForm((f) => ({ ...f, image: url }))} />
+            <MultiImageUpload
+              value={Array.isArray(form.images) && form.images.length ? form.images : (form.image ? [form.image] : [])}
+              onChange={(arr) => setForm((f) => ({ ...f, images: arr, image: arr[0] || '' }))}
+            />
           </div>
         </div>
         <F label="Price (₹)" value={form.price} onChange={set('price')} inputMode="numeric" />
@@ -226,34 +230,49 @@ function Overlay({ children, onClose, wide }) {
   );
 }
 
-
-function ImageUpload({ value, onUploaded }) {
+function MultiImageUpload({ value = [], onChange }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const upload = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setErr(''); setBusy(true);
-    try {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('upload_preset', PRESET);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-      const data = await res.json();
-      if (data.secure_url) onUploaded(data.secure_url);
-      else setErr(data.error?.message || 'Upload failed');
-    } catch { setErr('Upload failed'); }
-    setBusy(false);
+  const uploadOne = async (file) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', PRESET);
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.secure_url) return data.secure_url;
+    throw new Error(data.error?.message || 'Upload failed');
   };
+  const onPick = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    setErr(''); setBusy(true);
+    const urls = [];
+    for (const f of files) { try { urls.push(await uploadOne(f)); } catch (er) { setErr(er.message); } }
+    if (urls.length) onChange([...value, ...urls]);
+    setBusy(false);
+    e.target.value = '';
+  };
+  const removeAt = (i) => onChange(value.filter((_, idx) => idx !== i));
+  const makeMain = (i) => { const arr = [...value]; const [x] = arr.splice(i, 1); onChange([x, ...arr]); };
   return (
     <div>
-      <label className="cursor-pointer grid place-items-center w-24 h-28 rounded-lg border-2 border-dashed border-line bg-ink hover:border-violet overflow-hidden">
-        {busy ? <Loader2 size={20} className="animate-spin text-muted" />
-          : value ? <img src={value} alt="" className="w-full h-full object-cover" />
-          : <span className="text-center text-[11px] text-muted px-1"><Upload size={18} className="mx-auto mb-1" />Upload</span>}
-        <input type="file" accept="image/*" onChange={upload} className="hidden" />
-      </label>
-      {err && <p className="text-[11px] text-rose mt-1 max-w-[96px]">{err}</p>}
+      <div className="flex flex-wrap gap-2 items-start">
+        {value.map((url, i) => (
+          <div key={i} className="relative w-24 h-28 rounded-lg overflow-hidden border border-line group">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" className="w-full h-full object-cover" />
+            {i === 0 && <span className="absolute top-1 left-1 bg-rose text-white text-[9px] font-bold px-1.5 py-0.5 rounded">MAIN</span>}
+            <button type="button" onClick={() => removeAt(i)} className="absolute top-1 right-1 bg-black/60 text-white rounded-full w-5 h-5 grid place-items-center text-xs">×</button>
+            {i !== 0 && <button type="button" onClick={() => makeMain(i)} className="absolute bottom-1 left-1 right-1 bg-black/60 text-white text-[9px] rounded py-0.5 opacity-0 group-hover:opacity-100">Make main</button>}
+          </div>
+        ))}
+        <label className="cursor-pointer grid place-items-center w-24 h-28 rounded-lg border-2 border-dashed border-line bg-ink hover:border-violet">
+          {busy ? <Loader2 size={20} className="animate-spin text-muted" /> : <span className="text-center text-[11px] text-muted px-1"><Upload size={18} className="mx-auto mb-1" />Add photos</span>}
+          <input type="file" accept="image/*" multiple onChange={onPick} className="hidden" />
+        </label>
+      </div>
+      {err && <p className="text-[11px] text-rose mt-1">{err}</p>}
+      <p className="text-[11px] text-muted mt-1">Tip: first image is the main one. Hover a photo to “Make main”.</p>
     </div>
   );
 }
