@@ -1,8 +1,8 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, MapPin } from 'lucide-react';
-import { adminListOrders, updateOrderStatus, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
+import { X, Phone, MapPin, Truck, Check } from 'lucide-react';
+import { adminListOrders, updateOrderStatus, updateOrderPartner, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
 import { inr, cx } from '@/lib/format';
 
 const STATUS_OPTIONS = [...ORDER_STAGES, 'cancelled'];
@@ -25,6 +25,12 @@ export default function AdminOrders() {
     await updateOrderStatus(code, status);
     load();
     setDetail((d) => (d && d.code === code ? { ...d, status } : d));
+  };
+
+  const savePartner = async (code, partner) => {
+    await updateOrderPartner(code, partner);
+    load();
+    setDetail((d) => (d && d.code === code ? { ...d, delivery_partner: partner } : d));
   };
 
   const shown = (list || []).filter((o) => filter === 'all' ? true : filter === 'active' ? (o.status !== 'delivered' && o.status !== 'cancelled') : o.status === filter);
@@ -125,10 +131,37 @@ export default function AdminOrders() {
                   {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{STAGE_LABEL[s]}</option>)}
                 </select>
               </div>
+
+              <PartnerEditor key={detail.code} detail={detail} onSave={savePartner} />
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  );
+}
+
+
+function PartnerEditor({ detail, onSave }) {
+  const [name, setName] = useState(detail.delivery_partner?.name || '');
+  const [phone, setPhone] = useState(detail.delivery_partner?.phone || '');
+  const [busy, setBusy] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const save = async () => {
+    setBusy(true); setSaved(false);
+    try { await onSave(detail.code, name.trim() || phone.trim() ? { name: name.trim(), phone: phone.trim() } : null); setSaved(true); setTimeout(() => setSaved(false), 1500); } catch {}
+    setBusy(false);
+  };
+  return (
+    <div className="mt-4 rounded-lg border border-line p-3">
+      <p className="text-xs text-muted flex items-center gap-1.5 mb-2"><Truck size={14} /> Delivery partner (customer can call)</p>
+      <div className="grid grid-cols-2 gap-2">
+        <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Partner name" className="bg-ink border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-violet" />
+        <input value={phone} onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))} inputMode="numeric" placeholder="10-digit phone" className="bg-ink border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-violet" />
+      </div>
+      <button onClick={save} disabled={busy} className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-rose text-white px-4 py-1.5 text-xs font-semibold disabled:opacity-60">
+        {saved ? <><Check size={13} /> Assigned</> : busy ? 'Saving…' : 'Assign partner'}
+      </button>
     </div>
   );
 }

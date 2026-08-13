@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, Package, ShoppingCart, Boxes, LogOut, Loader2, Menu, X } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Boxes, Tag, LogOut, Loader2, Menu, X } from 'lucide-react';
 import { getUser, signOut } from '@/lib/auth';
 import { SUPABASE_READY } from '@/lib/config';
 import { cx } from '@/lib/format';
@@ -12,6 +12,7 @@ const nav = [
   { href: '/admin/products', label: 'Products', icon: Package },
   { href: '/admin/orders', label: 'Orders', icon: ShoppingCart },
   { href: '/admin/inventory', label: 'Inventory', icon: Boxes },
+  { href: '/admin/coupons', label: 'Coupons', icon: Tag },
 ];
 
 export default function AdminLayout({ children }) {

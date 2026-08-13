@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, BadgePercent, Truck, Gift, RefreshCcw, Zap, PackageCheck, ShieldCheck } from 'lucide-react';
@@ -7,6 +8,28 @@ import SaleBanner from '@/components/SaleBanner';
 import ProductRail from '@/components/ProductRail';
 import Reveal from '@/components/Reveal';
 import { BRAND } from '@/lib/config';
+
+function StoreSwitcher({ store, setStore }) {
+  return (
+    <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-5">
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { key: 'onet', label: 'OneT India', tag: 'Fashion', grad: 'from-plum via-rose to-violet' },
+          { key: 'rakhi', label: 'Rakhi Store', tag: 'Festive picks', grad: 'from-[#C0182B] to-[#6E0C18]' },
+        ].map((s) => {
+          const active = store === s.key;
+          return (
+            <button key={s.key} onClick={() => setStore(s.key)}
+              className={`relative overflow-hidden rounded-2xl px-5 py-4 text-left border transition-all ${active ? `bg-gradient-to-br ${s.grad} text-white border-transparent shadow-glow` : 'bg-white text-ivory border-line hover:border-violet'}`}>
+              <span className={`font-display text-xl font-extrabold ${s.key === 'rakhi' ? 'italic' : ''}`}>{s.label}</span>
+              <span className={`block text-xs mt-0.5 ${active ? 'text-white/80' : 'text-muted'}`}>{s.tag}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
 
 
 
@@ -20,22 +43,31 @@ const steps = [
 ];
 
 export default function HomePage() {
+  const [store, setStore] = useState('onet');
   return (
     <>
       <Hero />
 
-      
+      <StoreSwitcher store={store} setStore={setStore} />
 
-      
+      {store === 'rakhi' ? (
+        <>
+          {/* ── RAKHI STORE ── */}
+          <ProductRail eyebrow="Rakhi Store" title="Rakhis for your sibling" category="rakhi" href="/products?category=rakhi" limit={12} />
+          <ProductRail eyebrow="Combos" title="Rakhi gift combos" category="rakhi" href="/products?category=rakhi" limit={12} />
+        </>
+      ) : (
+        <>
+          {/* ── PRODUCT RAILS ── */}
+          <ProductRail eyebrow="Selling fast" title={`Trending in ${BRAND.city}`} limit={12} />
+          <ProductRail eyebrow="Just in" title="New arrivals" category="women" href="/products?category=women" limit={12} />
 
-      {/* ── PRODUCT RAILS ── */}
-      <ProductRail eyebrow="Selling fast" title={`Trending in ${BRAND.city}`} limit={12} />
-      <ProductRail eyebrow="Just in" title="New arrivals" category="women" href="/products?category=women" limit={12} />
+          {/* ── SALE ── */}
+          <SaleBanner />
 
-      {/* ── SALE ── */}
-      <SaleBanner />
-
-      <ProductRail eyebrow="Steal deals" title="Under ₹999" href="/products" limit={12} />
+          <ProductRail eyebrow="Steal deals" title="Under ₹999" href="/products" limit={12} />
+        </>
+      )}
 
       {/* ── HOW IT WORKS ── */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-14">

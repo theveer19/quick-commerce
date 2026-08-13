@@ -36,6 +36,11 @@ export default function CheckoutPage() {
   const [err, setErr] = useState('');
   const [mounted, setMounted] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
+  const [coupon, setCoupon] = useState('');
+  const [couponMsg, setCouponMsg] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [appliedCode, setAppliedCode] = useState('');
+  const [couponBusy, setCouponBusy] = useState(false);
   useEffect(() => {
     setMounted(true);
     const check = async () => {
@@ -72,7 +77,21 @@ export default function CheckoutPage() {
 
   const sub = subtotal();
   const delivery = sub >= BRAND.freeDeliveryAbove ? 0 : BRAND.deliveryFee;
-  const total = sub + delivery;
+  const total = Math.max(0, sub + delivery - discount);
+
+  const applyCoupon = async () => {
+    setCouponMsg('');
+    if (!coupon.trim()) return;
+    setCouponBusy(true);
+    try {
+      const res = await fetch('/api/coupon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: coupon.trim(), subtotal: sub }) });
+      const j = await res.json();
+      if (j.valid) { setDiscount(j.discount); setAppliedCode(j.code); setCouponMsg(`✓ ${j.message}`); }
+      else { setDiscount(0); setAppliedCode(''); setCouponMsg(j.message || 'Invalid coupon'); }
+    } catch { setCouponMsg('Could not check coupon'); }
+    setCouponBusy(false);
+  };
+  const removeCoupon = () => { setCoupon(''); setDiscount(0); setAppliedCode(''); setCouponMsg(''); };
 
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
@@ -95,6 +114,7 @@ export default function CheckoutPage() {
       city: BRAND.city,
     },
     payment_method: method,
+    coupon: appliedCode || null,
   });
 
   const finish = (code) => { clear(); router.push(`/order/${code}`); };
@@ -207,6 +227,22 @@ export default function CheckoutPage() {
           <div className="mt-4 border-t border-line pt-4 space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-muted">Subtotal</span><span className="text-ivory">{inr(sub)}</span></div>
             <div className="flex justify-between"><span className="text-muted">Delivery</span><span className={delivery === 0 ? 'text-mint' : 'text-ivory'}>{delivery === 0 ? 'Free' : inr(delivery)}</span></div>
+            {discount > 0 && <div className="flex justify-between"><span className="text-muted">Discount {appliedCode ? `(${appliedCode})` : ''}</span><span className="text-mint">-{inr(discount)}</span></div>}
+
+            {/* coupon */}
+            <div className="pt-2">
+              {appliedCode ? (
+                <button onClick={removeCoupon} className="text-xs font-semibold text-rose underline">Remove coupon</button>
+              ) : (
+                <div className="flex gap-2">
+                  <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} placeholder="Coupon code"
+                    className="flex-1 bg-white border border-line rounded-lg px-3 py-2 text-sm text-ivory outline-none focus:border-violet uppercase" />
+                  <button onClick={applyCoupon} disabled={couponBusy} className="rounded-lg bg-rose text-white px-4 py-2 text-sm font-semibold disabled:opacity-60">{couponBusy ? '…' : 'Apply'}</button>
+                </div>
+              )}
+              {couponMsg && <p className={`mt-1.5 text-xs ${discount > 0 ? 'text-mint' : 'text-rose'}`}>{couponMsg}</p>}
+            </div>
+
             <div className="flex justify-between font-display text-lg font-bold text-ivory pt-2 border-t border-line"><span>Total</span><span>{inr(total)}</span></div>
           </div>
 

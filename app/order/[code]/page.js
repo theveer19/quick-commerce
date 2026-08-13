@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Check, MapPin, Phone, PartyPopper } from 'lucide-react';
+import { Check, MapPin, Phone, PartyPopper, Truck, FileText } from 'lucide-react';
 import { fetchOrder, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
 import MapTracker from '@/components/MapTracker';
 import { inr } from '@/lib/format';
@@ -48,11 +48,27 @@ export default function OrderPage() {
         </div>
       )}
 
+      {order.delivery_partner?.phone && order.status !== 'cancelled' && order.status !== 'delivered' && (
+        <div className="mb-6 rounded-xl2 border border-line bg-surface p-4 flex items-center gap-3">
+          <span className="grid place-items-center w-12 h-12 rounded-full bg-lilacbg text-rose shrink-0"><Truck size={22} /></span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs text-muted">Your delivery partner</p>
+            <p className="font-display font-bold text-ivory">{order.delivery_partner.name || 'On the way'}</p>
+          </div>
+          <a href={`tel:${order.delivery_partner.phone}`} className="inline-flex items-center gap-2 rounded-full bg-rose text-white px-5 py-2.5 font-semibold shadow-glow">
+            <Phone size={16} /> Call
+          </a>
+        </div>
+      )}
+
       <div className="rounded-xl2 border border-line bg-surface p-6">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div>
             <p className="text-sm text-muted">Order</p>
             <h1 className="font-display text-2xl font-bold text-ivory">{order.code}</h1>
+            <a href={`/invoice/${order.code}`} className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1.5 text-xs font-semibold text-grape hover:bg-lilacbg">
+              <FileText size={14} /> View / download bill
+            </a>
           </div>
           <div className="text-right">
             <p className="text-sm text-muted">Arriving in</p>

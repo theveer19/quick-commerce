@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Package, User, MapPin, Headphones, LogOut, ChevronRight, ShoppingBag, Check, Loader2, ArrowLeft, Plus, Trash2 } from 'lucide-react';
+import { Package, User, MapPin, Headphones, LogOut, ChevronRight, ShoppingBag, Check, Loader2, ArrowLeft, Plus, Trash2, FileText } from 'lucide-react';
 import { getCurrentUser, signOutUser, updateName } from '@/lib/user-auth';
 import { useAuthModal } from '@/lib/auth-modal';
 import { fetchMyOrders, STAGE_LABEL } from '@/lib/data';
@@ -106,21 +106,25 @@ export default function AccountPage() {
               ) : (
                 <div className="space-y-3">
                   {orders.map((o) => (
-                    <Link key={o.code} href={`/order/${o.code}`}
+                    <div key={o.code}
                       className="group flex items-center gap-4 rounded-xl border border-line bg-white shadow-soft hover:shadow-card transition-all p-4">
-                      <span className="grid place-items-center w-11 h-11 rounded-xl bg-lilacbg text-grape shrink-0"><Package size={20} /></span>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-display font-bold text-ivory">{o.code}</span>
-                          <span className={cx('text-[11px] font-semibold px-2 py-0.5 rounded-full', badge(o.status))}>{STAGE_LABEL[o.status] || o.status}</span>
+                      <Link href={`/order/${o.code}`} className="flex items-center gap-4 flex-1 min-w-0">
+                        <span className="grid place-items-center w-11 h-11 rounded-xl bg-lilacbg text-grape shrink-0"><Package size={20} /></span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-display font-bold text-ivory">{o.code}</span>
+                            <span className={cx('text-[11px] font-semibold px-2 py-0.5 rounded-full', badge(o.status))}>{STAGE_LABEL[o.status] || o.status}</span>
+                          </div>
+                          <p className="text-sm text-muted mt-0.5 truncate">
+                            {o.items?.length} item{o.items?.length > 1 ? 's' : ''} · {new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted mt-0.5 truncate">
-                          {o.items?.length} item{o.items?.length > 1 ? 's' : ''} · {new Date(o.created_at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                        </p>
-                      </div>
-                      <span className="font-display font-bold text-ivory">{inr(o.total)}</span>
-                      <ChevronRight size={18} className="text-muted" />
-                    </Link>
+                        <span className="font-display font-bold text-ivory">{inr(o.total)}</span>
+                      </Link>
+                      <Link href={`/invoice/${o.code}`} className="shrink-0 inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-2 text-xs font-semibold text-grape hover:bg-lilacbg" title="View / download bill">
+                        <FileText size={14} /> <span className="hidden sm:inline">Bill</span>
+                      </Link>
+                    </div>
                   ))}
                 </div>
               )

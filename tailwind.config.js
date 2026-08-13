@@ -4,22 +4,26 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // semantic (soft pastel theme)
-        ink: '#F7F5FF',        // app base + input insets
-        surface: '#FFFFFF',    // cards
-        'surface-2': '#FBFAFF',
-        ivory: '#2B2543',      // primary text
+        // ── OneT brand palette ──
+        ink: '#F7F5FF',        // app base bg
+        surface: '#FFFFFF',    // Pure White — cards
+        'surface-2': '#FBF9FF',
+        ivory: '#17142B',      // Trust Navy — primary text
         muted: '#8B87A3',      // muted text
-        rose: '#7C68E6',       // PRIMARY (soft lavender-violet)
-        violet: '#B9A7F5',     // secondary lilac
-        mint: '#10B981',       // success (kept readable)
-        line: 'rgba(43,37,72,0.08)',
-        // brand purples (softened)
-        plum: '#5B4B9E',
-        grape: '#7C5FD6',
-        lilacbg: '#EFEAFF',
-        // pastels
-        pink: '#FFE3EF',
+        rose: '#6D22D9',       // PRIMARY — Royal Purple (buttons/logo)
+        violet: '#A855F7',     // Lavender — secondary
+        grape: '#8B3DFF',      // Electric Purple
+        plum: '#3B0A8F',       // Deep Purple — depth/headlines
+        lilacbg: '#EDE5FF',    // Soft Lavender — section bg
+        mint: '#10B981',       // success
+        line: 'rgba(23,20,43,0.10)',
+        // accents
+        fashionpink: '#F43F8F',
+        softpink: '#FCE7F3',
+        gold: '#F4B942',
+        cloud: '#F4F3F7',
+        // pastels (kept)
+        pink: '#FCE7F3',
         'pink-ink': '#D6608C',
         peach: '#FFEBDD',
         'peach-ink': '#E08A54',
@@ -29,19 +33,22 @@ module.exports = {
         lemon: '#FFF4CE',
         'lemon-ink': '#C2A24B',
         // independence day
-        saffron: '#FFB566',
-        indiagreen: '#4CAF7D',
+        saffron: '#FF9933',
+        indiagreen: '#138808',
       },
       fontFamily: {
         display: ['var(--font-display)', 'system-ui', 'sans-serif'],
         body: ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
       borderRadius: { xl2: '1.25rem', xl3: '1.75rem' },
+      backgroundImage: {
+        'brand-gradient': 'linear-gradient(90deg, #3B0A8F 0%, #6D22D9 50%, #A855F7 100%)',
+      },
       boxShadow: {
-        glow: '0 10px 40px -12px rgba(124,104,230,0.4)',
-        card: '0 12px 40px -18px rgba(91,75,158,0.22)',
-        soft: '0 6px 24px -10px rgba(91,75,158,0.14)',
-        pop: '0 20px 60px -22px rgba(124,104,230,0.42)',
+        glow: '0 10px 40px -12px rgba(109,34,217,0.42)',
+        card: '0 12px 40px -18px rgba(59,10,143,0.22)',
+        soft: '0 6px 24px -10px rgba(59,10,143,0.14)',
+        pop: '0 20px 60px -22px rgba(109,34,217,0.42)',
       },
       keyframes: {
         marquee: { '0%': { transform: 'translateX(0)' }, '100%': { transform: 'translateX(-50%)' } },

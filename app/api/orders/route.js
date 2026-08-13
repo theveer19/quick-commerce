@@ -25,7 +25,7 @@ export async function POST(req) {
 
   let body;
   try { body = await req.json(); } catch { return NextResponse.json({ error: 'Invalid request' }, { status: 400 }); }
-  const { items, customer, address, payment_method } = body || {};
+  const { items, customer, address, payment_method, coupon } = body || {};
 
   // ── server-side validation ──
   const name = (customer?.name || '').trim();
@@ -40,7 +40,7 @@ export async function POST(req) {
 
   // ── trusted pricing (server) ──
   let priced;
-  try { priced = await priceOrder(items); }
+  try { priced = await priceOrder(items, coupon); }
   catch (e) { return NextResponse.json({ error: e.message || 'Could not price your order' }, { status: 400 }); }
 
   // ── identify the user (login-gated checkout) ──
@@ -69,6 +69,8 @@ export async function POST(req) {
     items: priced.items,
     subtotal: priced.subtotal,
     delivery: priced.delivery,
+    discount: priced.discount || 0,
+    coupon: priced.coupon || null,
     total: priced.total,
     payment_method: method,
     payment_status: method === 'razorpay' ? 'pending' : 'pay_on_delivery',
@@ -98,8 +100,17 @@ export async function POST(req) {
   // ── persist ──
   const admin = getSupabaseAdmin();
   if (admin) {
-    const { error } = await admin.from('orders').insert(row);
-    if (error) return NextResponse.json({ error: 'Could not place order. Try again.' }, { status: 500 });
+    let { error } = await admin.from('orders').insert(row);
+    if (error) {
+      console.error('[orders] insert error #1:', error.message, error.details || '', error.hint || '');
+      // discount/coupon columns may not exist yet — retry without them so orders still work
+      const { discount, coupon, ...rest } = row;
+      const retry = await admin.from('orders').insert(rest);
+      if (retry.error) {
+        console.error('[orders] insert error #2:', retry.error.message, retry.error.details || '', retry.error.hint || '');
+        return NextResponse.json({ error: 'Could not place order. Try again.', detail: retry.error.message, hint: retry.error.hint || retry.error.details || null }, { status: 500 });
+      }
+    }
     // atomic-per-row stock decrement (guarded so stock never goes negative)
     for (const it of priced.items) {
       try { await admin.rpc('decrement_stock', { p_id: it.id, p_qty: it.qty }); } catch {}

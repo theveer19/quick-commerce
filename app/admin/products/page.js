@@ -1,10 +1,13 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, Pencil, Trash2, X, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, X, Loader2, Upload } from 'lucide-react';
 import { adminListProducts, saveProduct, deleteProduct } from '@/lib/data';
 import { CATEGORIES, SUBCATEGORIES } from '@/lib/seed';
 import { inr, cx } from '@/lib/format';
+
+const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || 'dxs0l9l3c';
+const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || 'onet_products';
 
 const blank = { name: '', category: 'women', subcategory: '', price: '', mrp: '', stock: '', sizes: '', colors: '', image: '', description: '', is_active: true };
 
@@ -144,6 +147,7 @@ function ProductModal({ initial, onClose, onSaved }) {
           <span className="text-xs text-muted">Category</span>
           <select value={form.category} onChange={set('category')} className="mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet">
             {CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+            <option value="rakhi">Rakhi</option>
           </select>
         </label>
         <label className="block">
@@ -153,7 +157,12 @@ function ProductModal({ initial, onClose, onSaved }) {
             {(SUBCATEGORIES[form.category] || []).map((sc) => <option key={sc.slug} value={sc.slug}>{sc.name}</option>)}
           </select>
         </label>
-        <F label="Image URL" value={form.image} onChange={set('image')} placeholder="https://…" />
+        <div className="block sm:col-span-2">
+          <span className="text-xs text-muted">Product image</span>
+          <div className="mt-1">
+            <ImageUpload value={form.image} onUploaded={(url) => setForm((f) => ({ ...f, image: url }))} />
+          </div>
+        </div>
         <F label="Price (₹)" value={form.price} onChange={set('price')} inputMode="numeric" />
         <F label="MRP (₹)" value={form.mrp} onChange={set('mrp')} inputMode="numeric" />
         <F label="Stock" value={form.stock} onChange={set('stock')} inputMode="numeric" />
@@ -199,5 +208,37 @@ function Overlay({ children, onClose, wide }) {
         {children}
       </motion.div>
     </motion.div>
+  );
+}
+
+
+function ImageUpload({ value, onUploaded }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState('');
+  const upload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setErr(''); setBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('upload_preset', PRESET);
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
+      const data = await res.json();
+      if (data.secure_url) onUploaded(data.secure_url);
+      else setErr(data.error?.message || 'Upload failed');
+    } catch { setErr('Upload failed'); }
+    setBusy(false);
+  };
+  return (
+    <div>
+      <label className="cursor-pointer grid place-items-center w-24 h-28 rounded-lg border-2 border-dashed border-line bg-ink hover:border-violet overflow-hidden">
+        {busy ? <Loader2 size={20} className="animate-spin text-muted" />
+          : value ? <img src={value} alt="" className="w-full h-full object-cover" />
+          : <span className="text-center text-[11px] text-muted px-1"><Upload size={18} className="mx-auto mb-1" />Upload</span>}
+        <input type="file" accept="image/*" onChange={upload} className="hidden" />
+      </label>
+      {err && <p className="text-[11px] text-rose mt-1 max-w-[96px]">{err}</p>}
+    </div>
   );
 }
