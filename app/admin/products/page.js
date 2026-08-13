@@ -151,11 +151,8 @@ function ProductModal({ initial, onClose, onSaved }) {
           </select>
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Subcategory</span>
-          <select value={form.subcategory || ''} onChange={set('subcategory')} className="mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet">
-            <option value="">—</option>
-            {(SUBCATEGORIES[form.category] || []).map((sc) => <option key={sc.slug} value={sc.slug}>{sc.name}</option>)}
-          </select>
+          <span className="text-xs text-muted">Subcategory (type e.g. Kurti, Saree, Jeans)</span>
+          <input value={form.subcategory || ''} onChange={set('subcategory')} placeholder="e.g. Kurti" className="mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet" />
         </label>
         <div className="block sm:col-span-2">
           <span className="text-xs text-muted">Product image</span>
@@ -166,7 +163,25 @@ function ProductModal({ initial, onClose, onSaved }) {
         <F label="Price (₹)" value={form.price} onChange={set('price')} inputMode="numeric" />
         <F label="MRP (₹)" value={form.mrp} onChange={set('mrp')} inputMode="numeric" />
         <F label="Stock" value={form.stock} onChange={set('stock')} inputMode="numeric" />
-        <F label="Sizes (comma separated)" value={form.sizes} onChange={set('sizes')} placeholder="S, M, L, XL" />
+        <div className="block">
+          <span className="text-xs text-muted">Sizes</span>
+          <div className="mt-1 flex flex-wrap gap-2">
+            {['S', 'M', 'L', 'XL', 'XXL', 'Free Size'].map((sz) => {
+              const list = String(form.sizes || '').split(',').map((x) => x.trim()).filter(Boolean);
+              const on = list.includes(sz);
+              const toggle = () => {
+                const next = on ? list.filter((x) => x !== sz) : [...list, sz];
+                setForm((f) => ({ ...f, sizes: next.join(', ') }));
+              };
+              return (
+                <button type="button" key={sz} onClick={toggle}
+                  className={cx('px-3 py-1.5 rounded-lg text-sm font-semibold border transition', on ? 'bg-rose text-white border-rose' : 'bg-ink text-muted border-line hover:border-violet')}>
+                  {sz}
+                </button>
+              );
+            })}
+          </div>
+        </div>
         <F label="Colors (Name:#hex, comma separated)" full value={form.colors} onChange={set('colors')} placeholder="Black:#222222, White:#FFFFFF" />
         <label className="block sm:col-span-2">
           <span className="text-xs text-muted">Description</span>
