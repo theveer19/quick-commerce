@@ -166,7 +166,7 @@ function ProductModal({ initial, onClose, onSaved }) {
         <div className="block">
           <span className="text-xs text-muted">Sizes</span>
           <div className="mt-1 flex flex-wrap gap-2">
-            {['S', 'M', 'L', 'XL', 'XXL', 'Free Size'].map((sz) => {
+            {['S', 'M', 'L', 'XL', 'XXL', 'Free Size', '28', '30', '32', '34', '36', '38'].map((sz) => {
               const list = String(form.sizes || '').split(',').map((x) => x.trim()).filter(Boolean);
               const on = list.includes(sz);
               const toggle = () => {
