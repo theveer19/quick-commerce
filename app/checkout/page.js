@@ -207,7 +207,7 @@ export default function CheckoutPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Full name" value={form.name} onChange={set('name')} full />
               <Field label="Mobile number" value={form.phone} onChange={set('phone')} placeholder="10-digit" inputMode="numeric" />
-              <Field label="Pincode" value={form.pincode} onChange={set('pincode')} placeholder="474001" inputMode="numeric" />
+              <Field label="Pincode" value={form.pincode} onChange={set('pincode')} placeholder="" inputMode="numeric" />
               <Field label="Address (house, street, area)" value={form.address} onChange={set('address')} full />
               <Field label="Landmark (optional)" value={form.landmark} onChange={set('landmark')} />
 
