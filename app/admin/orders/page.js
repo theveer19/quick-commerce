@@ -106,15 +106,32 @@ export default function AdminOrders() {
                 <p className="text-sm text-muted mt-1 flex items-center gap-2"><Phone size={14} /> {detail.customer?.phone}</p>
                 <p className="text-sm text-muted mt-1 flex items-start gap-2"><MapPin size={14} className="mt-0.5" /> {detail.address?.line}, {detail.address?.landmark && detail.address.landmark + ', '}{detail.address?.city} - {detail.address?.pincode}</p>
                 {detail.address?.notes && <p className="text-xs text-muted mt-2">Note: {detail.address.notes}</p>}
+                <a
+                  href={detail.address?.lat && detail.address?.lng
+                    ? `https://www.google.com/maps/dir/?api=1&destination=${detail.address.lat},${detail.address.lng}`
+                    : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([detail.address?.line, detail.address?.landmark, detail.address?.city, detail.address?.pincode].filter(Boolean).join(' '))}`}
+                  target="_blank" rel="noreferrer"
+                  className="mt-3 inline-flex items-center gap-2 rounded-full bg-rose text-white px-4 py-2 text-sm font-semibold shadow-glow">
+                  <MapPin size={15} /> {detail.address?.lat ? 'Navigate to exact pin' : 'Navigate (approx. by address)'}
+                </a>
+                {detail.address?.lat && <p className="text-[11px] text-mint mt-1">✓ Customer shared exact GPS location</p>}
               </div>
 
               <div className="mt-4 rounded-xl border border-line p-4">
                 <h3 className="text-sm font-semibold text-ivory mb-2">Items</h3>
                 {detail.items?.map((it, i) => (
-                  <div key={i} className="flex justify-between text-sm py-1">
-                    <span className="text-muted">{it.name}{it.size ? ` · ${it.size}` : ""}{it.color ? ` · ${it.color}` : ""} × {it.qty}</span>
-                    <span className="text-ivory">{inr(it.price * it.qty)}</span>
-                  </div>
+                  <a key={i} href={`/product/${it.id}`} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-3 py-2 border-b border-line last:border-0 hover:bg-lilacbg/40 rounded-lg px-1 transition">
+                    {it.image
+                      // eslint-disable-next-line @next/next/no-img-element
+                      ? <img src={it.image} alt={it.name} className="w-12 h-14 rounded-lg object-cover bg-ink shrink-0" />
+                      : <div className="w-12 h-14 rounded-lg bg-ink shrink-0 grid place-items-center text-[9px] text-muted">No img</div>}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-grape truncate hover:underline">{it.name || 'View product'}</p>
+                      <p className="text-xs text-muted">{it.size ? `Size: ${it.size}` : ''}{it.size && it.color ? ' · ' : ''}{it.color ? `Color: ${it.color}` : ''}{(it.size || it.color) ? ' · ' : ''}Qty: {it.qty}</p>
+                    </div>
+                    <span className="text-sm font-semibold text-ivory shrink-0">{inr(it.price * it.qty)}</span>
+                  </a>
                 ))}
                 <div className="border-t border-line mt-2 pt-2 flex justify-between text-sm">
                   <span className="text-muted">Delivery</span><span className="text-ivory">{detail.delivery === 0 ? 'Free' : inr(detail.delivery)}</span>

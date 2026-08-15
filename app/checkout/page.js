@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Wallet, Truck, Loader2 } from 'lucide-react';
+import { ShieldCheck, Wallet, Truck, Loader2, MapPin, Navigation, Check } from 'lucide-react';
 import { useCart } from '@/lib/cart';
 import { placeOrder, markPaidLocal } from '@/lib/data';
 import { getCurrentUser } from '@/lib/user-auth';
@@ -41,6 +41,20 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = useState(0);
   const [appliedCode, setAppliedCode] = useState('');
   const [couponBusy, setCouponBusy] = useState(false);
+  const [geo, setGeo] = useState(null); // {lat, lng}
+  const [geoBusy, setGeoBusy] = useState(false);
+  const [geoErr, setGeoErr] = useState('');
+
+  const pinLocation = () => {
+    setGeoErr('');
+    if (typeof navigator === 'undefined' || !navigator.geolocation) { setGeoErr('Location not supported on this device'); return; }
+    setGeoBusy(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => { setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude }); setGeoBusy(false); },
+      () => { setGeoErr('Could not get location. Please allow location access.'); setGeoBusy(false); },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
   useEffect(() => {
     setMounted(true);
     const check = async () => {
@@ -100,6 +114,7 @@ export default function CheckoutPage() {
     if (!/^[6-9]\d{9}$/.test(form.phone.trim())) return 'Enter a valid 10-digit mobile number';
     if (!form.address.trim()) return 'Please enter your delivery address';
     if (!/^\d{6}$/.test(form.pincode.trim())) return 'Enter a valid 6-digit pincode';
+    if (!geo) return 'Please tap "Pin my exact location" so the delivery partner can reach you';
     return '';
   };
 
@@ -112,6 +127,8 @@ export default function CheckoutPage() {
       pincode: form.pincode.trim(),
       notes: form.notes.trim(),
       city: BRAND.city,
+      lat: geo?.lat || null,
+      lng: geo?.lng || null,
     },
     payment_method: method,
     coupon: appliedCode || null,
@@ -193,6 +210,16 @@ export default function CheckoutPage() {
               <Field label="Pincode" value={form.pincode} onChange={set('pincode')} placeholder="474001" inputMode="numeric" />
               <Field label="Address (house, street, area)" value={form.address} onChange={set('address')} full />
               <Field label="Landmark (optional)" value={form.landmark} onChange={set('landmark')} />
+
+              <div className="sm:col-span-2">
+                <button type="button" onClick={pinLocation} disabled={geoBusy}
+                  className={cx('w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-semibold transition', geo ? 'border-mint bg-mint/10 text-mint' : 'border-rose/40 bg-rose/5 text-rose hover:bg-rose/10')}>
+                  {geoBusy ? <Loader2 size={16} className="animate-spin" /> : geo ? <Check size={16} /> : <Navigation size={16} />}
+                  {geoBusy ? 'Getting your location…' : geo ? 'Exact location pinned ✓' : 'Pin my exact location (for accurate delivery)'}
+                </button>
+                {geoErr && <p className="mt-1.5 text-xs text-rose">{geoErr}</p>}
+                {geo && <p className="mt-1.5 text-xs text-muted">Delivery partner will get exact GPS navigation to your door.</p>}
+              </div>
               <Field label="Delivery notes (optional)" value={form.notes} onChange={set('notes')} />
             </div>
           </section>
