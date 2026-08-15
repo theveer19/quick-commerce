@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, ShieldCheck, Truck, RefreshCw, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, ShieldCheck, Truck, RefreshCw, Check, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import { fetchProduct } from '@/lib/data';
 import { useCart } from '@/lib/cart';
 import { inr, cx } from '@/lib/format';
@@ -16,6 +16,9 @@ export default function ProductPage() {
   const [size, setSize] = useState(null);
   const [color, setColor] = useState(null);
   const [added, setAdded] = useState(false);
+  const [canBack, setCanBack] = useState(false);
+  useEffect(() => { setCanBack(typeof window !== 'undefined' && window.history.length > 1); }, []);
+  const goBack = () => { if (canBack) router.back(); else router.push('/products'); };
 
   useEffect(() => {
     fetchProduct(id).then((prod) => {
@@ -43,6 +46,9 @@ export default function ProductPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
+      <button onClick={goBack} className="mb-4 inline-flex items-center gap-1.5 text-sm font-semibold text-muted hover:text-rose transition-colors">
+        <ArrowLeft size={16} /> Back
+      </button>
       <div className="text-sm text-muted mb-4">Home / Products / {p.name}</div>
       <div className="grid gap-10 md:grid-cols-2">
         <Gallery images={(p.images && p.images.length ? p.images : [p.image]).filter(Boolean)} name={p.name} off={off} />
