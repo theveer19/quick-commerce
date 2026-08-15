@@ -44,7 +44,7 @@ export default function OrderPage() {
 
       {order.status !== 'cancelled' && (
         <div className="mb-6">
-          <MapTracker status={order.status} etaMinutes={BRAND.etaMinutes} rider={order.rider} />
+          <MapTracker status={order.status} etaMinutes={BRAND.etaMinutes} rider={order.delivery_partner} />
         </div>
       )}
 
