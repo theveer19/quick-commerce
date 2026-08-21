@@ -72,12 +72,22 @@ export default function Footer() {
           ))}
         </div>
 
-        <div className="mt-12 pt-6 border-t border-line flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted">
-          <p>© {new Date().getFullYear()} {BRAND.name}. Built in Gwalior.</p>
-          <p className="flex items-center gap-2">
-            Secure payments by <span className="font-semibold text-ivory">Razorpay</span>
-          </p>
-        </div>
+       <div className="mt-12 pt-6 border-t border-line flex flex-col gap-3 text-sm text-muted">
+  <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+    <p>© {new Date().getFullYear()} {BRAND.name}. Built in Gwalior.</p>
+
+    <p className="flex items-center gap-2">
+      Secure payments by <span className="font-semibold text-ivory">Razorpay</span>
+    </p>
+  </div>
+
+  <div className="text-center border-t border-line pt-3">
+    <p className="font-semibold text-ivory">ONET VISION</p>
+    <p className="text-xs text-muted">
+      Legal Entity • www.onet.co.in
+    </p>
+  </div>
+</div>
       </div>
     </footer>
   );
