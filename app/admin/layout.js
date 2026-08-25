@@ -82,7 +82,7 @@ export default function AdminLayout({ children }) {
         </aside>
         {/* mobile drawer */}
         {open && (
-          <div className="lg:hidden fixed inset-0 z-30 top-14">
+          <div className="lg:hidden fixed inset-0 zF-30 top-14">
             <div className="absolute inset-0 bg-black/50" onClick={() => setOpen(false)} />
             <aside className="relative w-64 h-full bg-surface border-r border-line p-4"><SideNav /></aside>
           </div>
