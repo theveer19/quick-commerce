@@ -1,29 +1,22 @@
 'use client';
-import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Gift, Sparkles } from 'lucide-react';
 
-// next 15 August
-function nextIndependenceDay() {
-  const now = new Date();
-  let year = now.getFullYear();
-  let d = new Date(year, 7, 15, 23, 59, 59); // Aug = 7
-  if (d < now) d = new Date(year + 1, 7, 15, 23, 59, 59);
-  return d;
-}
+// Raksha Bandhan sale ends — set your end date here (year, monthIndex 0-11, day)
+const SALE_END = new Date(2026, 7, 9, 23, 59, 59); // 9 Aug 2026 (change as needed)
 
 function useCountdown(target) {
-  const [t, setT] = useState({ d: 0, h: 0, m: 0, s: 0 });
+  const [t, setT] = useState({ d: 0, h: 0, m: 0, s: 0, over: false });
   useEffect(() => {
     const tick = () => {
-      const diff = Math.max(0, target - new Date());
-      setT({
-        d: Math.floor(diff / 86400000),
-        h: Math.floor((diff / 3600000) % 24),
-        m: Math.floor((diff / 60000) % 60),
-        s: Math.floor((diff / 1000) % 60),
-      });
+      const diff = target.getTime() - Date.now();
+      if (diff <= 0) { setT({ d: 0, h: 0, m: 0, s: 0, over: true }); return; }
+      const d = Math.floor(diff / 86400000);
+      const h = Math.floor((diff % 86400000) / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setT({ d, h, m, s, over: false });
     };
     tick();
     const id = setInterval(tick, 1000);
@@ -32,57 +25,57 @@ function useCountdown(target) {
   return t;
 }
 
-const Box = ({ v, l }) => (
-  <div className="text-center">
-    <div className="w-12 sm:w-14 rounded-xl bg-white/15 backdrop-blur py-2 font-display text-2xl sm:text-3xl font-bold tabular-nums">
-      {String(v).padStart(2, '0')}
+function Unit({ value, label }) {
+  return (
+    <div className="flex flex-col items-center">
+      <div className="min-w-[46px] rounded-lg bg-white/15 backdrop-blur px-2.5 py-1.5 text-center">
+        <span className="text-xl sm:text-2xl font-bold text-white tabular-nums">{String(value).padStart(2, '0')}</span>
+      </div>
+      <span className="mt-1 text-[10px] uppercase tracking-wide text-white/70">{label}</span>
     </div>
-    <div className="mt-1 text-[10px] uppercase tracking-wider text-white/80">{l}</div>
-  </div>
-);
+  );
+}
 
 export default function SaleBanner() {
-  const [target] = useState(nextIndependenceDay);
-  const { d, h, m, s } = useCountdown(target);
+  const { d, h, m, s, over } = useCountdown(SALE_END);
+  if (over) return null;
 
   return (
-    <section className="mx-auto max-w-7xl px-4 pt-4 pb-2">
-      <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-        className="relative overflow-hidden rounded-xl3 shadow-pop">
-        {/* tricolor top strip */}
-        <div className="absolute inset-x-0 top-0 h-1.5 flex">
-          <div className="flex-1 bg-saffron" /><div className="flex-1 bg-white" /><div className="flex-1 bg-indiagreen" />
+    <div className="relative overflow-hidden rounded-2xl sm:rounded-[1.75rem] bg-gradient-to-br from-[#B0306B] via-[#8A1E5C] to-[#4A0E3A] shadow-card">
+      {/* soft glows */}
+      <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-fashionpink/30 blur-3xl" aria-hidden />
+      <div className="pointer-events-none absolute -left-10 bottom-0 h-40 w-40 rounded-full bg-[#F6C64B]/20 blur-2xl" aria-hidden />
+
+      <div className="relative grid gap-5 px-6 py-7 sm:px-10 sm:py-9 md:grid-cols-2 md:items-center">
+        <div className="text-white">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
+            <Sparkles size={13} className="fill-white" /> Raksha Bandhan Special
+          </span>
+          <h2 className="mt-3 font-display text-2xl sm:text-3xl font-bold leading-tight">
+            Rakhi is <span className="text-[#FFD86B]">100% FREE</span><br />this Raksha Bandhan 🪢
+          </h2>
+          <p className="mt-2 text-sm text-white/85">
+            Free rakhi with every order + up to <b>50% OFF</b> festive styles. Use code <b>RAKHI</b>.
+          </p>
+          <Link href="/offers"
+            className="mt-4 inline-flex items-center gap-2 rounded-full bg-white text-plum px-5 py-2.5 text-sm font-bold shadow-soft hover:bg-white/90 transition">
+            <Gift size={16} /> Celebrate the sale
+          </Link>
         </div>
-        {/* purple base with festive glow */}
-        <div className="bg-gradient-to-br from-grape via-plum to-[#2A1256] text-white px-6 py-8 md:px-12 md:py-10">
-          <div className="absolute -right-10 -top-6 w-56 h-56 rounded-full bg-saffron/25 blur-3xl" aria-hidden />
-          <div className="absolute -left-10 bottom-0 w-56 h-56 rounded-full bg-indiagreen/25 blur-3xl" aria-hidden />
 
-          <div className="relative flex flex-col md:flex-row md:items-center gap-6 md:gap-10">
-            <div className="flex-1">
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold tracking-wide">
-                🇮🇳 INDEPENDENCE DAY SALE
-              </span>
-              <h2 className="mt-3 font-display text-3xl md:text-5xl font-extrabold leading-tight">
-                Up to <span className="text-saffron">60% OFF</span> the freedom edit
-              </h2>
-              <p className="mt-2 text-white/80 max-w-md">
-                Celebrate in style. Extra flat ₹150 off with code <span className="font-semibold text-white">FREEDOM</span> on your first order.
-              </p>
-              <Link href="/products" className="mt-5 inline-flex items-center gap-2 rounded-full bg-white text-plum px-6 py-3 font-semibold hover:bg-white/90 transition">
-                Shop the sale <ArrowRight size={18} />
-              </Link>
-            </div>
-
-            <div className="shrink-0">
-              <p className="text-xs uppercase tracking-wider text-white/70 mb-2 text-center md:text-left">Sale ends in</p>
-              <div className="flex gap-2 sm:gap-3">
-                <Box v={d} l="Days" /><Box v={h} l="Hrs" /><Box v={m} l="Min" /><Box v={s} l="Sec" />
-              </div>
-            </div>
+        <div className="md:justify-self-end">
+          <p className="mb-2 text-xs uppercase tracking-wide text-white/70">Sale ends in</p>
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Unit value={d} label="Days" />
+            <span className="pb-4 text-xl text-white/50">:</span>
+            <Unit value={h} label="Hrs" />
+            <span className="pb-4 text-xl text-white/50">:</span>
+            <Unit value={m} label="Min" />
+            <span className="pb-4 text-xl text-white/50">:</span>
+            <Unit value={s} label="Sec" />
           </div>
         </div>
-      </motion.div>
-    </section>
+      </div>
+    </div>
   );
 }

@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Pencil, Trash2, X, Loader2, Upload } from 'lucide-react';
-import { adminListProducts, saveProduct, deleteProduct } from '@/lib/data';
+import { adminListProducts, saveProduct, deleteProduct, fetchSubcategories } from '@/lib/data';
 import { CATEGORIES, SUBCATEGORIES } from '@/lib/seed';
 import { inr, cx } from '@/lib/format';
 
@@ -111,6 +111,16 @@ function ProductModal({ initial, onClose, onSaved }) {
   const [err, setErr] = useState('');
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
+  // Existing subcategories (for suggestions) — refreshes when category changes
+  const [subOptions, setSubOptions] = useState([]);
+  useEffect(() => {
+    let alive = true;
+    fetchSubcategories(form.category)
+      .then((list) => { if (alive) setSubOptions(list); })
+      .catch(() => { if (alive) setSubOptions([]); });
+    return () => { alive = false; };
+  }, [form.category]);
+
   const save = async () => {
     if (!form.name || !form.price) return setErr('Name and price are required');
     setBusy(true); setErr('');
@@ -152,8 +162,21 @@ function ProductModal({ initial, onClose, onSaved }) {
           </select>
         </label>
         <label className="block">
-          <span className="text-xs text-muted">Subcategory (type e.g. Kurti, Saree, Jeans)</span>
-          <input value={form.subcategory || ''} onChange={set('subcategory')} placeholder="e.g. Kurti" className="mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet" />
+          <span className="text-xs text-muted">Subcategory (pick an existing one or type a new)</span>
+          <input value={form.subcategory || ''} onChange={set('subcategory')} list="subcat-suggestions" placeholder="e.g. Kurti" className="mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet" />
+          <datalist id="subcat-suggestions">
+            {subOptions.map((sc) => <option key={sc} value={sc} />)}
+          </datalist>
+          {subOptions.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1">
+              {subOptions.filter((sc) => !form.subcategory || sc.toLowerCase().includes((form.subcategory || '').toLowerCase())).slice(0, 8).map((sc) => (
+                <button type="button" key={sc} onClick={() => setForm((f) => ({ ...f, subcategory: sc }))}
+                  className={cx('px-2 py-1 rounded-md text-[11px] border capitalize', (form.subcategory || '').toLowerCase() === sc.toLowerCase() ? 'bg-rose text-white border-rose' : 'bg-ink text-muted border-line hover:border-violet')}>
+                  {sc}
+                </button>
+              ))}
+            </div>
+          )}
         </label>
         <div className="block sm:col-span-2">
           <span className="text-xs text-muted">Product images (first = main, upload multiple)</span>

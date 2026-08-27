@@ -34,6 +34,7 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState('tryandbuy');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
+  useEffect(() => { if (!err) return; const t = setTimeout(() => setErr(''), 4000); return () => clearTimeout(t); }, [err]);
   const [mounted, setMounted] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -44,6 +45,16 @@ export default function CheckoutPage() {
   const [geo, setGeo] = useState(null); // {lat, lng}
   const [geoBusy, setGeoBusy] = useState(false);
   const [geoErr, setGeoErr] = useState('');
+
+  // Auto-capture GPS silently (best-effort) so delivery still gets a pin when allowed
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setGeo({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  }, []);
 
   const pinLocation = () => {
     setGeoErr('');
@@ -114,7 +125,6 @@ export default function CheckoutPage() {
     if (!/^[6-9]\d{9}$/.test(form.phone.trim())) return 'Enter a valid 10-digit mobile number';
     if (!form.address.trim()) return 'Please enter your delivery address';
     if (!/^\d{6}$/.test(form.pincode.trim())) return 'Enter a valid 6-digit pincode';
-    if (!geo) return 'Please tap "Pin my exact location" so the delivery partner can reach you';
     return '';
   };
 
@@ -183,6 +193,16 @@ export default function CheckoutPage() {
   };
 
   return (
+    <>
+      {err && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] max-w-[92%] w-auto">
+          <div className="flex items-center gap-2 rounded-xl bg-rose text-white text-sm font-medium px-4 py-3 shadow-glow animate-[fadeIn_.2s_ease]">
+            <span className="shrink-0">⚠️</span>
+            <span>{err}</span>
+            <button onClick={() => setErr('')} className="ml-2 text-white/80 hover:text-white">✕</button>
+          </div>
+        </div>
+      )}
     <div className="mx-auto max-w-6xl px-4 py-10">
       <h1 className="font-display text-3xl font-bold text-ivory mb-8">Checkout</h1>
       <div className="grid gap-8 lg:grid-cols-[1fr_360px]">
@@ -207,19 +227,9 @@ export default function CheckoutPage() {
             <div className="grid gap-3 sm:grid-cols-2">
               <Field label="Full name" value={form.name} onChange={set('name')} full />
               <Field label="Mobile number" value={form.phone} onChange={set('phone')} placeholder="10-digit" inputMode="numeric" />
-              <Field label="Pincode" value={form.pincode} onChange={set('pincode')} placeholder="" inputMode="numeric" />
+              <Field label="Pincode" value={form.pincode} onChange={set('pincode')} placeholder="474001" inputMode="numeric" />
               <Field label="Address (house, street, area)" value={form.address} onChange={set('address')} full />
               <Field label="Landmark (optional)" value={form.landmark} onChange={set('landmark')} />
-
-              <div className="sm:col-span-2">
-                <button type="button" onClick={pinLocation} disabled={geoBusy}
-                  className={cx('w-full flex items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-3 text-sm font-semibold transition', geo ? 'border-mint bg-mint/10 text-mint' : 'border-rose/40 bg-rose/5 text-rose hover:bg-rose/10')}>
-                  {geoBusy ? <Loader2 size={16} className="animate-spin" /> : geo ? <Check size={16} /> : <Navigation size={16} />}
-                  {geoBusy ? 'Getting your location…' : geo ? 'Exact location pinned ✓' : 'Pin my exact location (for accurate delivery)'}
-                </button>
-                {geoErr && <p className="mt-1.5 text-xs text-rose">{geoErr}</p>}
-                {geo && <p className="mt-1.5 text-xs text-muted">Delivery partner will get exact GPS navigation to your door.</p>}
-              </div>
               <Field label="Delivery notes (optional)" value={form.notes} onChange={set('notes')} />
             </div>
           </section>
@@ -273,7 +283,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between font-display text-lg font-bold text-ivory pt-2 border-t border-line"><span>Total</span><span>{inr(total)}</span></div>
           </div>
 
-          {err && <p className="mt-4 text-sm text-rose bg-rose/10 rounded-lg px-3 py-2">{err}</p>}
+
 
           <button onClick={submit} disabled={busy}
             className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full bg-rose text-white px-6 py-3.5 font-semibold shadow-glow hover:brightness-110 transition-all disabled:opacity-60">
@@ -286,6 +296,7 @@ export default function CheckoutPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }
 

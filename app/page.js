@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, BadgePercent, Truck, Gift, RefreshCcw, Zap, PackageCheck, ShieldCheck } from 'lucide-react';
 import Hero from '@/components/Hero';
+import CategoryCircles from '@/components/CategoryCircles';
 import SaleBanner from '@/components/SaleBanner';
+import RakhiBanner from '@/components/RakhiBanner';
 import ProductRail from '@/components/ProductRail';
 import Reveal from '@/components/Reveal';
 import { BRAND } from '@/lib/config';
@@ -48,6 +50,8 @@ export default function HomePage() {
     <>
       <Hero />
 
+      <RakhiBanner />
+
       <StoreSwitcher store={store} setStore={setStore} />
 
       {store === 'rakhi' ? (
@@ -58,6 +62,8 @@ export default function HomePage() {
         </>
       ) : (
         <>
+          <CategoryCircles />
+
           {/* ── PRODUCT RAILS ── */}
           <ProductRail eyebrow="Selling fast" title={`Trending in ${BRAND.city}`} limit={12} />
           <ProductRail eyebrow="Just in" title="New arrivals" category="women" href="/products?category=women" limit={12} />

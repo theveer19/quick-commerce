@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Copy, Check, Gift, Tag, Truck, ShieldCheck, Sparkles, ArrowRight, Flame, TrendingUp } from 'lucide-react';
 
 const OFFERS = [
-  { code: 'FREEDOM', title: 'Independence Day Sale', desc: 'Up to 60% OFF + extra ₹150 off your first order.', badge: '60% OFF', grad: 'from-[#FF9933] via-grape to-indiagreen', icon: Sparkles, tri: true },
+  { code: 'RAKHI', title: 'Raksha Bandhan Special', desc: 'Rakhi 100% FREE with every order + up to 50% OFF festive styles.', badge: 'FREE RAKHI', grad: 'from-[#B0306B] via-[#8A1E5C] to-[#4A0E3A]', icon: Gift, tri: false },
   { code: 'WELCOME100', title: 'First Order ₹100 OFF', desc: 'New here? Flat ₹100 off your first order above ₹499.', badge: '₹100 OFF', grad: 'from-grape to-plum', icon: Gift },
   { code: 'SAVE500', title: 'Spend ₹500, Save ₹100', desc: 'Flat ₹100 off on orders above ₹500.', badge: '₹100 OFF', grad: 'from-[#0EA5A0] to-indiagreen', icon: Tag },
   { code: 'SAVE1000', title: 'Spend ₹1000, Save ₹200', desc: 'Flat ₹200 off on orders above ₹1000.', badge: '₹200 OFF', grad: 'from-fashionpink to-plum', icon: Flame },

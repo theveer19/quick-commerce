@@ -1,7 +1,13 @@
 'use client';
+function fmtDT(v) {
+  if (!v) return '';
+  const d = new Date(v);
+  if (isNaN(d)) return '';
+  return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+}
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, MapPin, Truck, Check } from 'lucide-react';
+import { X, Phone, MapPin, Truck, Check, FileText } from 'lucide-react';
 import { adminListOrders, updateOrderStatus, updateOrderPartner, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
 import { inr, cx } from '@/lib/format';
 
@@ -21,14 +27,21 @@ export default function AdminOrders() {
   const load = () => adminListOrders().then(setList);
   useEffect(() => { load(); }, []);
 
+  const [toast, setToast] = useState('');
+  const notify = (m) => { setToast(m); setTimeout(() => setToast(''), 4500); };
+
   const setStatus = async (code, status) => {
-    await updateOrderStatus(code, status);
+    try {
+      await updateOrderStatus(code, status);
+    } catch (e) { notify('Could not update status: ' + (e.message || 'unknown') ); return; }
     load();
     setDetail((d) => (d && d.code === code ? { ...d, status } : d));
   };
 
   const savePartner = async (code, partner) => {
-    await updateOrderPartner(code, partner);
+    try {
+      await updateOrderPartner(code, partner);
+    } catch (e) { notify('Could not assign partner: ' + (e.message || 'unknown')); return; }
     load();
     setDetail((d) => (d && d.code === code ? { ...d, delivery_partner: partner } : d));
   };
@@ -36,7 +49,16 @@ export default function AdminOrders() {
   const shown = (list || []).filter((o) => filter === 'all' ? true : filter === 'active' ? (o.status !== 'delivered' && o.status !== 'cancelled') : o.status === filter);
 
   return (
-    <div>
+    <>
+      {toast && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[300] max-w-[92%]">
+          <div className="rounded-xl bg-rose text-white text-sm font-medium px-4 py-3 shadow-glow flex items-center gap-2">
+            <span>⚠️</span><span>{toast}</span>
+            <button onClick={() => setToast('')} className="ml-2 text-white/80">✕</button>
+          </div>
+        </div>
+      )}
+      <div>
       <h1 className="font-display text-2xl font-bold text-ivory">Orders</h1>
       <p className="text-muted text-sm mt-1">Update status to move the customer&apos;s live tracking.</p>
 
@@ -61,7 +83,9 @@ export default function AdminOrders() {
                   <th className="text-left font-medium p-4">Customer</th>
                   <th className="text-left font-medium p-4">Total</th>
                   <th className="text-left font-medium p-4">Payment</th>
+                  <th className="text-left font-medium p-4">Placed at</th>
                   <th className="text-left font-medium p-4">Status</th>
+                  <th className="text-left font-medium p-4">Bill</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
@@ -71,11 +95,18 @@ export default function AdminOrders() {
                     <td className="p-4 text-muted">{o.customer?.name}<div className="text-xs">{o.customer?.phone}</div></td>
                     <td className="p-4 text-ivory">{inr(o.total)}</td>
                     <td className="p-4 text-muted">{o.payment_method === 'razorpay' ? 'Prepaid' : 'Try & Buy'}</td>
+                    <td className="p-4 text-xs text-muted whitespace-nowrap">{fmtDT(o.created_at)}</td>
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <select value={o.status} onChange={(e) => setStatus(o.code, e.target.value)}
                         className={cx('rounded-full px-3 py-1 text-xs font-medium border-0 outline-none cursor-pointer', badgeColor(o.status))}>
                         {STATUS_OPTIONS.map((s) => <option key={s} value={s} className="bg-surface text-ivory">{STAGE_LABEL[s]}</option>)}
                       </select>
+                    </td>
+                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                      <a href={`/invoice/${o.code}`} target="_blank" rel="noreferrer" title="Open bill / download PDF"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-line px-3 py-1 text-xs font-medium text-grape hover:bg-lilacbg/40">
+                        <FileText size={13} /> Bill
+                      </a>
                     </td>
                   </tr>
                 ))}
@@ -96,6 +127,11 @@ export default function AdminOrders() {
                 <h2 className="font-display text-lg font-bold text-ivory">{detail.code}</h2>
                 <button onClick={() => setDetail(null)} className="text-muted hover:text-ivory"><X size={20} /></button>
               </div>
+              <a href={`/invoice/${detail.code}`} target="_blank" rel="noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-full bg-grape text-white px-4 py-2 text-sm font-semibold shadow-glow hover:opacity-90">
+                <FileText size={15} /> View / download bill (PDF)
+              </a>
+              <p className="text-xs text-muted mt-1.5">Placed: {fmtDT(detail.created_at)}{detail.delivered_at ? ` · Delivered: ${fmtDT(detail.delivered_at)}` : ''}</p>
 
               <div className="mt-4">
                 <span className={cx('inline-block rounded-full px-3 py-1 text-xs font-medium', badgeColor(detail.status))}>{STAGE_LABEL[detail.status]}</span>
@@ -155,6 +191,7 @@ export default function AdminOrders() {
         )}
       </AnimatePresence>
     </div>
+    </>
   );
 }
 

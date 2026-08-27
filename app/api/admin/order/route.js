@@ -25,7 +25,10 @@ export async function POST(req) {
   if (!code) return NextResponse.json({ error: 'Missing order code' }, { status: 400 });
 
   const patch = {};
-  if (typeof status === 'string') patch.status = status;
+  if (typeof status === 'string') {
+    patch.status = status;
+    if (status === 'delivered') patch.delivered_at = new Date().toISOString();
+  }
   if (partner !== undefined) patch.delivery_partner = partner;
   if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
 

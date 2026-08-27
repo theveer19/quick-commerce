@@ -22,12 +22,12 @@ const SLIDES = [
     img: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80',
   },
   {
-    grad: 'from-[#7A1FA2] via-grape to-plum',
-    eyebrow: '🇮🇳 Independence Day Sale',
-    title: 'Up to 60% OFF\nthe Freedom Edit',
-    sub: 'Extra ₹150 off your first order with code FREEDOM.',
-    cta: 'Grab the sale', href: '/products',
-    img: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?auto=format&fit=crop&w=800&q=80',
+    grad: 'from-[#B0306B] via-[#8A1E5C] to-[#4A0E3A]',
+    eyebrow: '🪢 Raksha Bandhan Special', badge: 'gift',
+    title: 'Rakhi is 100% FREE\nthis Raksha Bandhan',
+    sub: 'Free rakhi with every order + up to 50% OFF festive styles. Use code RAKHI.',
+    cta: 'Celebrate the sale', href: '/offers',
+    img: 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=800&q=80',
   },
   {
     grad: 'from-[#0EA5A0] to-indiagreen',

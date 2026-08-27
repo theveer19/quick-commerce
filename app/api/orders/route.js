@@ -4,6 +4,31 @@ import { priceOrder } from '@/lib/pricing';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
 
+// Fire-and-forget order email to the store owner (via Resend).
+// Set RESEND_API_KEY + ORDER_NOTIFY_EMAIL in env to enable. No-op if unset.
+async function notifyOrderEmail(order) {
+  try {
+    const key = process.env.RESEND_API_KEY;
+    const to = process.env.ORDER_NOTIFY_EMAIL || 'onetvision01@gmail.com';
+    if (!key) return;
+    const itemsHtml = (order.items || []).map((i) => `<li>${i.name || 'Item'}${i.size ? ' · ' + i.size : ''}${i.color ? ' · ' + i.color : ''} × ${i.qty} — ₹${i.price * i.qty}</li>`).join('');
+    const a = order.address || {};
+    const html = `
+      <h2>New order ${order.code}</h2>
+      <p><b>Customer:</b> ${order.customer?.name || ''} (${order.customer?.phone || ''})</p>
+      <p><b>Address:</b> ${a.line || ''}${a.landmark ? ', ' + a.landmark : ''}, ${a.city || ''} - ${a.pincode || ''}${a.notes ? '<br>Note: ' + a.notes : ''}</p>
+      <p><b>Payment:</b> ${order.payment_method === 'razorpay' ? 'Prepaid' : 'Try & Buy (pay at door)'}</p>
+      <p><b>Total: ₹${order.total}</b></p>
+      <ul>${itemsHtml}</ul>
+      <p>Placed at ${new Date(order.created_at).toLocaleString('en-IN')}</p>`;
+    await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      body: JSON.stringify({ from: 'OneT India <onboarding@resend.dev>', to: [to], subject: `🛍️ New order ${order.code} — ₹${order.total}`, html }),
+    });
+  } catch (e) { /* never block the order on email failure */ }
+}
+
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +90,8 @@ export async function POST(req) {
       pincode,
       city: (address?.city || 'Gwalior').slice(0, 60),
       notes: (address?.notes || '').trim().slice(0, 200) || null,
+      lat: (address?.lat != null ? Number(address.lat) : null),
+      lng: (address?.lng != null ? Number(address.lng) : null),
     },
     items: priced.items,
     subtotal: priced.subtotal,
@@ -115,6 +142,7 @@ export async function POST(req) {
     for (const it of priced.items) {
       try { await admin.rpc('decrement_stock', { p_id: it.id, p_qty: it.qty }); } catch {}
     }
+    notifyOrderEmail(row);
     return NextResponse.json({ code, total: priced.total, persisted: true, razorpay });
   }
 
