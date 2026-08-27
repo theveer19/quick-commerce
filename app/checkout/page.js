@@ -34,7 +34,7 @@ export default function CheckoutPage() {
   const [method, setMethod] = useState('tryandbuy');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  useEffect(() => { if (!err) return; const t = setTimeout(() => setErr(''), 4000); return () => clearTimeout(t); }, [err]);
+  useEffect(() => { if (!err) return; const t = setTimeout(() => setErr(''), 5000); return () => clearTimeout(t); }, [err]);
   const [mounted, setMounted] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [coupon, setCoupon] = useState('');
@@ -146,8 +146,13 @@ export default function CheckoutPage() {
 
   const finish = (code) => { clear(); router.push(`/order/${code}`); };
 
+  const showError = (msg) => {
+    setErr(msg);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const submit = async () => {
-    const v = validate(); if (v) return setErr(v);
+    const v = validate(); if (v) return showError(v);
     setErr(''); setBusy(true);
     try {
       if (method === 'razorpay') await loadRazorpay();
@@ -183,13 +188,13 @@ export default function CheckoutPage() {
             if (!vd.verified) throw new Error('Payment verification failed');
             if (!data.persisted) markPaidLocal(data.code, r.razorpay_payment_id);
             finish(data.code);
-          } catch (e) { setErr(e.message); setBusy(false); }
+          } catch (e) { showError(e.message || 'Could not place order'); setBusy(false); }
         },
         modal: { ondismiss: () => setBusy(false) },
       });
-      rzp.on('payment.failed', () => { setErr('Payment failed. Please try again.'); setBusy(false); });
+      rzp.on('payment.failed', () => { showError('Payment failed. Please try again.'); setBusy(false); });
       rzp.open();
-    } catch (e) { setErr(e.message || 'Something went wrong'); setBusy(false); }
+    } catch (e) { showError(e.message || 'Something went wrong'); setBusy(false); }
   };
 
   return (
