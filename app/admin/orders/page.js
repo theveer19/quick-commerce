@@ -94,7 +94,11 @@ export default function AdminOrders() {
                     <td className="p-4"><span className="font-medium text-ivory">{o.code}</span><div className="text-xs text-muted">{o.items?.length} items</div></td>
                     <td className="p-4 text-muted">{o.customer?.name}<div className="text-xs">{o.customer?.phone}</div></td>
                     <td className="p-4 text-ivory">{inr(o.total)}</td>
-                    <td className="p-4 text-muted">{o.payment_method === 'razorpay' ? 'Prepaid' : 'Try & Buy'}</td>
+                    <td className="p-4 text-muted">{o.payment_method === 'razorpay'
+                      ? (o.payment_status === 'paid'
+                          ? <span className="text-mint font-medium">Prepaid · Paid</span>
+                          : <span className="text-rose font-medium">Prepaid · Unpaid</span>)
+                      : 'Try & Buy'}</td>
                     <td className="p-4 text-xs text-muted whitespace-nowrap">{fmtDT(o.created_at)}</td>
                     <td className="p-4" onClick={(e) => e.stopPropagation()}>
                       <select value={o.status} onChange={(e) => setStatus(o.code, e.target.value)}

@@ -121,7 +121,7 @@ export default function OrderPage() {
         </div>
         <div className="rounded-xl2 border border-line bg-surface p-5">
           <h3 className="font-display font-semibold text-ivory mb-3">Payment</h3>
-          <p className="text-sm text-muted">{order.payment_method === 'razorpay' ? 'Prepaid (Razorpay)' : 'Try & Buy — pay at door'}</p>
+          <p className="text-sm text-muted">{order.payment_method === 'razorpay' ? (order.payment_status === 'paid' ? 'Prepaid (Razorpay) — Paid' : 'Prepaid (Razorpay) — Payment pending') : 'Try & Buy — pay at door'}</p>
           <p className="text-sm text-muted mt-1">Status: <span className="text-ivory">{order.payment_status}</span></p>
         </div>
       </div>

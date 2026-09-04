@@ -17,7 +17,7 @@ async function notifyOrderEmail(order) {
       <h2>New order ${order.code}</h2>
       <p><b>Customer:</b> ${order.customer?.name || ''} (${order.customer?.phone || ''})</p>
       <p><b>Address:</b> ${a.line || ''}${a.landmark ? ', ' + a.landmark : ''}, ${a.city || ''} - ${a.pincode || ''}${a.notes ? '<br>Note: ' + a.notes : ''}</p>
-      <p><b>Payment:</b> ${order.payment_method === 'razorpay' ? 'Prepaid' : 'Try & Buy (pay at door)'}</p>
+      <p><b>Payment:</b> ${order.payment_method === 'razorpay' ? (order.payment_status === 'paid' ? 'Prepaid (Paid)' : 'Prepaid — PAYMENT PENDING (confirm on Razorpay before dispatch)') : 'Try & Buy (pay at door)'}</p>
       <p><b>Total: ₹${order.total}</b></p>
       <ul>${itemsHtml}</ul>
       <p>Placed at ${new Date(order.created_at).toLocaleString('en-IN')}</p>`;

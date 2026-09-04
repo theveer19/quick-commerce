@@ -5,9 +5,7 @@ import { Plus, Pencil, Trash2, X, Loader2, Upload } from 'lucide-react';
 import { adminListProducts, saveProduct, deleteProduct, fetchSubcategories } from '@/lib/data';
 import { CATEGORIES, SUBCATEGORIES } from '@/lib/seed';
 import { inr, cx } from '@/lib/format';
-
-const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD || 'dxs0l9l3c';
-const PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_PRESET || 'onet_products';
+import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 const blank = { name: '', category: 'women', subcategory: '', price: '', mrp: '', stock: '', sizes: '', colors: '', image: '', images: [], description: '', is_active: true };
 
@@ -257,13 +255,20 @@ function MultiImageUpload({ value = [], onChange }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
   const uploadOne = async (file) => {
+    // Upload to our own server route → Supabase Storage (replaces Cloudinary).
+    const sb = getSupabaseBrowser();
+    let token = '';
+    if (sb) { const { data } = await sb.auth.getSession(); token = data?.session?.access_token || ''; }
     const fd = new FormData();
     fd.append('file', file);
-    fd.append('upload_preset', PRESET);
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-    const data = await res.json();
-    if (data.secure_url) return data.secure_url;
-    throw new Error(data.error?.message || 'Upload failed');
+    const res = await fetch('/api/admin/upload', {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (data.url) return data.url;
+    throw new Error(data.error || 'Upload failed');
   };
   const onPick = async (e) => {
     const files = Array.from(e.target.files || []);
