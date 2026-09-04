@@ -22,11 +22,11 @@ const SLIDES = [
     img: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80',
   },
   {
-    grad: 'from-[#B0306B] via-[#8A1E5C] to-[#4A0E3A]',
-    eyebrow: '🪢 Raksha Bandhan Special', badge: 'gift',
-    title: 'Rakhi is 100% FREE\nthis Raksha Bandhan',
-    sub: 'Free rakhi with every order + up to 50% OFF festive styles. Use code RAKHI.',
-    cta: 'Celebrate the sale', href: '/offers',
+    grad: 'from-[#1E1065] via-[#4C1D95] to-[#2A0E4E]',
+    eyebrow: '🦚 Janmashtami Special', badge: 'gift',
+    title: 'Happy Janmashtami\nजय श्री कृष्ण',
+    sub: 'Up to 60% OFF festive styles this Janmashtami. Use code KANHA.',
+    cta: 'Shop the sale', href: '/offers',
     img: 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=800&q=80',
   },
   {
