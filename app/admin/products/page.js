@@ -9,6 +9,27 @@ import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 const blank = { name: '', category: 'women', subcategory: '', price: '', mrp: '', stock: '', sizes: '', colors: '', image: '', images: [], description: '', is_active: true };
 
+// Resize + compress an image in the browser before upload. Keeps files small
+// (well under Vercel's ~4.5MB request limit) and saves storage/bandwidth.
+async function compressImage(file, maxDim = 1600, quality = 0.82) {
+  try {
+    if (!file.type?.startsWith('image/') || file.type === 'image/gif') return file;
+    const bmp = await createImageBitmap(file);
+    let { width, height } = bmp;
+    const scale = Math.min(1, maxDim / Math.max(width, height));
+    width = Math.round(width * scale);
+    height = Math.round(height * scale);
+    const canvas = document.createElement('canvas');
+    canvas.width = width; canvas.height = height;
+    canvas.getContext('2d').drawImage(bmp, 0, 0, width, height);
+    const blob = await new Promise((res) => canvas.toBlob(res, 'image/jpeg', quality));
+    if (blob && blob.size < file.size) {
+      return new File([blob], (file.name || 'photo').replace(/\.\w+$/, '') + '.jpg', { type: 'image/jpeg' });
+    }
+    return file;
+  } catch { return file; }
+}
+
 export default function AdminProducts() {
   const [list, setList] = useState(null);
   const [editing, setEditing] = useState(null);
@@ -254,8 +275,9 @@ function Overlay({ children, onClose, wide }) {
 function MultiImageUpload({ value = [], onChange }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState('');
-  const uploadOne = async (file) => {
-    // Upload to our own server route → Supabase Storage (replaces Cloudinary).
+  const uploadOne = async (rawFile) => {
+    // Shrink big phone photos first, then upload via our server route → Supabase.
+    const file = await compressImage(rawFile);
     const sb = getSupabaseBrowser();
     let token = '';
     if (sb) { const { data } = await sb.auth.getSession(); token = data?.session?.access_token || ''; }

@@ -6,7 +6,7 @@ import { ArrowRight, BadgePercent, Truck, Gift, RefreshCcw, Zap, PackageCheck, S
 import Hero from '@/components/Hero';
 import CategoryCircles from '@/components/CategoryCircles';
 import SaleBanner from '@/components/SaleBanner';
-import JanmashtamiBanner from '@/components/JanmashtamiBanner';
+import GaneshChaturthiBanner from '@/components/GaneshChaturthiBanner';
 import ProductRail from '@/components/ProductRail';
 import Reveal from '@/components/Reveal';
 import { BRAND } from '@/lib/config';
@@ -50,7 +50,7 @@ export default function HomePage() {
     <>
       <Hero />
 
-      <JanmashtamiBanner />
+      <GaneshChaturthiBanner />
 
       <StoreSwitcher store={store} setStore={setStore} />
 
