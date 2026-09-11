@@ -47,14 +47,14 @@ export default function Footer() {
           <div>
             <div className="flex items-center gap-1.5">
               <span className="font-display text-2xl font-extrabold text-ivory">OneT</span>
-              <span className="font-display text-2xl font-extrabold text-rose">India</span>
+              <span className="font-display text-2xl font-extrabold text-[#8C1C13]">India</span>
             </div>
             <p className="mt-3 text-sm text-muted max-w-xs">{BRAND.tagline}. Order the trend, try it at your door, keep only what you love.</p>
             <div className="mt-4 flex items-center gap-2 text-sm text-muted">
-              <MapPin size={16} className="text-rose" /> {BRAND.address}
+              <MapPin size={16} className="text-[#8C1C13]" /> {BRAND.address}
             </div>
             <div className="mt-4 flex gap-3">
-              <a href="#" aria-label="Instagram" className="p-2.5 rounded-full border border-line hover:border-rose hover:text-rose transition-colors"><Instagram size={18} /></a>
+              <a href="#" aria-label="Instagram" className="p-2.5 rounded-full border border-line hover:border-[#8C1C13] hover:text-[#8C1C13] transition-colors"><Instagram size={18} /></a>
               <a href="#" aria-label="WhatsApp" className="p-2.5 rounded-full border border-line hover:border-mint hover:text-mint transition-colors"><MessageCircle size={18} /></a>
             </div>
           </div>

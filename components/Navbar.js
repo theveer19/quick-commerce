@@ -22,8 +22,8 @@ const NAV = [
 function Logo() {
   return (
     <Link href="/" className="flex flex-col leading-none shrink-0">
-      <span className="font-display text-2xl font-extrabold tracking-tight text-ivory">One<span className="text-rose">T</span> <span className="text-rose">India</span></span>
-      <span className="text-[9px] font-semibold text-muted -mt-0.5">First Try. Then Buy. <span className="text-fashionpink">♥</span></span>
+      <span className="font-display text-2xl font-extrabold tracking-tight text-[#8C1C13]">OneT India</span>
+      <span className="text-[9px] font-semibold text-[#8C1C13] -mt-0.5">First Try. Then Buy. <span className="text-fashionpink">♥</span></span>
     </Link>
   );
 }
@@ -173,20 +173,20 @@ export default function Navbar() {
       {/* top row */}
       <div className="bg-white border-b border-line">
         <div className="mx-auto max-w-7xl px-4 h-16 flex items-center gap-3">
-          <button className="md:hidden text-ivory" onClick={() => setOpen((v) => !v)} aria-label="Menu">{open ? <X /> : <Menu />}</button>
+          <button className="md:hidden text-[#8C1C13]" onClick={() => setOpen((v) => !v)} aria-label="Menu">{open ? <X /> : <Menu />}</button>
           <Logo />
           <SearchBar value={q} onChange={(e) => setQ(e.target.value)} onSubmit={submitSearch} className="hidden md:block flex-1 max-w-xl mx-auto" />
           <div className="flex items-center gap-1 ml-auto">
-            <Link href="/wishlist" className="grid place-items-center w-10 h-10 rounded-lg text-muted hover:text-fashionpink hover:bg-lilacbg" aria-label="Wishlist"><Heart size={20} /></Link>
+            <Link href="/wishlist" className="grid place-items-center w-10 h-10 rounded-lg text-[#8C1C13] hover:text-fashionpink hover:bg-lilacbg" aria-label="Wishlist"><Heart size={20} /></Link>
             {mounted && user ? (
               <>
-                <Link href="/account" className="flex items-center gap-1.5 px-2 py-2 text-sm text-ivory rounded-lg hover:bg-lilacbg"><User size={18} /><span className="hidden sm:inline max-w-[80px] truncate">{user.name ? user.name.split(' ')[0] : 'Account'}</span></Link>
-                <button onClick={logout} className="hidden sm:grid place-items-center p-2.5 text-muted hover:text-rose rounded-lg hover:bg-lilacbg" aria-label="Logout"><LogOut size={18} /></button>
+                <Link href="/account" className="flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-[#8C1C13] rounded-lg hover:bg-lilacbg"><User size={18} /><span className="hidden sm:inline max-w-[80px] truncate">{user.name ? user.name.split(' ')[0] : 'Account'}</span></Link>
+                <button onClick={logout} className="hidden sm:grid place-items-center p-2.5 text-[#8C1C13] hover:text-rose rounded-lg hover:bg-lilacbg" aria-label="Logout"><LogOut size={18} /></button>
               </>
             ) : (
-              <button onClick={() => openAuth()} className="flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-ivory rounded-lg hover:bg-lilacbg"><User size={18} /><span className="hidden sm:inline">Login</span></button>
+              <button onClick={() => openAuth()} className="flex items-center gap-1.5 px-2 py-2 text-sm font-semibold text-[#8C1C13] rounded-lg hover:bg-lilacbg"><User size={18} /><span className="hidden sm:inline">Login</span></button>
             )}
-            <Link href="/cart" className="relative grid place-items-center w-10 h-10 rounded-lg text-ivory hover:bg-lilacbg" aria-label="Cart">
+            <Link href="/cart" className="relative grid place-items-center w-10 h-10 rounded-lg text-[#8C1C13] hover:bg-lilacbg" aria-label="Cart">
               <ShoppingBag size={20} />
               {mounted && count > 0 && <span className="absolute top-1 right-1 bg-rose text-white text-[10px] font-bold min-w-[16px] h-[16px] rounded-full grid place-items-center px-1">{count}</span>}
             </Link>
@@ -196,8 +196,8 @@ export default function Navbar() {
         <div className="md:hidden px-4 pb-3"><SearchBar value={q} onChange={(e) => setQ(e.target.value)} onSubmit={submitSearch} /></div>
       </div>
 
-      {/* dark category strip */}
-      <div className="bg-plum text-white">
+      {/* category strip */}
+      <div className="bg-[#8C1C13] text-white">
         <div className="mx-auto max-w-7xl px-4 h-11 flex items-center gap-3">
           <LocationPicker loc={loc} onPick={pickLoc} dark />
           <span className="h-4 w-px bg-white/20 shrink-0" />

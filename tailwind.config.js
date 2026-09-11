@@ -41,6 +41,7 @@ module.exports = {
         body: ['var(--font-body)', 'system-ui', 'sans-serif'],
       },
       borderRadius: { xl2: '1.25rem', xl3: '1.75rem' },
+      maxWidth: { '7xl': '90rem' },   // widen page container (1440px) → less empty side space on wide screens
       backgroundImage: {
         'brand-gradient': 'linear-gradient(90deg, #3B0A8F 0%, #6D22D9 50%, #A855F7 100%)',
       },

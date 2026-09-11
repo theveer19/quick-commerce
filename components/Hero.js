@@ -1,92 +1,32 @@
 'use client';
 import Link from 'next/link';
-import { ArrowRight, Zap, Truck, Gift, RefreshCcw } from 'lucide-react';
 import Carousel from './Carousel';
-import { BRAND } from '@/lib/config';
 
+// Brand-designed 16:9 hero banners. On desktop the height is capped to the
+// viewport so the whole banner fits above the fold (no scrolling); on mobile
+// it keeps the natural 16:9 ratio. object-cover fills edge-to-edge.
 const SLIDES = [
-  {
-    grad: 'from-grape via-plum to-[#1E0A44]',
-    eyebrow: `Delivered in ~${BRAND.etaMinutes} min`, badge: 'zap',
-    title: 'Fashion you love,\ndelivered in minutes',
-    sub: 'Today’s drops at your door before your chai gets cold.',
-    cta: 'Shop new drops', href: '/products',
-    img: 'https://images.unsplash.com/photo-1490481651871-ab68de25d43d?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    grad: 'from-grape to-plum',
-    eyebrow: 'Free delivery',
-    title: '₹0 delivery fees',
-    sub: `On every order above ₹${BRAND.freeDeliveryAbove}. No hidden charges.`,
-    cta: 'Shop now', href: '/products',
-    img: 'https://images.unsplash.com/photo-1441984904996-e0b6ba687e04?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    grad: 'from-[#B3122B] via-[#E4572E] to-[#FF9F1C]',
-    eyebrow: '🙏 Ganesh Chaturthi Special', badge: 'gift',
-    title: 'Happy Ganesh Chaturthi\nगणपति बप्पा मोरया',
-    sub: 'Up to 60% OFF festive styles this Ganesh Chaturthi. Use code GANESH.',
-    cta: 'Shop the sale', href: '/offers',
-    img: 'https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    grad: 'from-[#0EA5A0] to-indiagreen',
-    eyebrow: 'New customer offer',
-    title: '₹150 OFF\nyour first order',
-    sub: 'Use code FREEDOM at checkout. Limited time.',
-    cta: 'Claim offer', href: '/products',
-    img: 'https://images.unsplash.com/photo-1445205170230-053b83016050?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    grad: 'from-[#C2185B] via-fashionpink to-plum',
-    eyebrow: 'Try & Buy',
-    title: 'Try it on first.\nPay for keeps only.',
-    sub: 'Keep what fits, hand back the rest — right at your door.',
-    cta: 'How it works', href: '/products',
-    img: 'https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=800&q=80',
-  },
-  {
-    grad: 'from-plum to-grape',
-    eyebrow: 'Zero worries',
-    title: 'Free returns\nat your doorstep',
-    sub: 'Didn’t love it? Hand it back on the spot — no charges.',
-    cta: 'Start shopping', href: '/products',
-    img: 'https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&w=800&q=80',
-  },
+  { img: '/banners/try-then-buy.jpg', href: '/products', alt: 'First Try Then Buy — OneT India' },
+  { img: '/banners/good-vibes.jpg', href: '/products', alt: 'Fashion delivered to your door — OneT India' },
+  { img: '/banners/ganesh.jpg', href: '/offers', alt: 'Ganesh Chaturthi Sale — OneT India' },
+  { img: '/banners/zero-delivery.jpg', href: '/products', alt: '₹0 Delivery Fees on orders above ₹1000' },
+  { img: '/banners/free-returns.jpg', href: '/products', alt: 'Free Returns — Hassle-free process' },
 ];
 
 export default function Hero() {
   return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-5">
-      <Carousel autoPlay={3000} pauseOnHover={false} rounded="rounded-2xl sm:rounded-[1.75rem]" className="shadow-card">
-        {SLIDES.map((s, i) => {
-          const Icon = s.icon;
-          return (
-            <div key={i} className={`relative bg-gradient-to-br ${s.grad} min-h-[240px] sm:min-h-[320px]`}>
-              <div className="absolute -right-10 -top-10 w-56 h-56 rounded-full bg-white/10 blur-2xl" aria-hidden />
-              <div className="relative grid sm:grid-cols-2 items-center gap-4 px-6 py-8 sm:px-12 sm:py-12">
-                <div className="text-white">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold">
-                    {s.badge === 'zap' && <Zap size={13} className="fill-white" />}{s.eyebrow}
-                  </span>
-                  <h2 className="mt-3 font-display text-3xl sm:text-5xl font-extrabold leading-[1.02] whitespace-pre-line tracking-tight">{s.title}</h2>
-                  <p className="mt-3 text-white/80 max-w-sm">{s.sub}</p>
-                  <Link href={s.href} className="mt-6 inline-flex items-center gap-2 rounded-full bg-white text-plum px-6 py-3 font-semibold hover:bg-white/90 transition-colors">
-                    {s.cta} <ArrowRight size={17} />
-                  </Link>
-                </div>
-                <div className="hidden sm:block relative h-full min-h-[220px]">
-                  {s.img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={s.img} alt="" className="absolute inset-0 w-full h-full object-cover rounded-2xl border border-white/30" />
-                  ) : Icon ? (
-                    <div className="absolute inset-0 grid place-items-center"><Icon className="text-white/20" size={150} strokeWidth={1.4} /></div>
-                  ) : null}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+    <section className="mx-auto max-w-[1400px] px-3 sm:px-5 pt-4">
+      <Carousel autoPlay={4200} pauseOnHover={false} rounded="rounded-2xl sm:rounded-[1.5rem]" className="shadow-card">
+        {SLIDES.map((s, i) => (
+          <Link
+            key={i}
+            href={s.href}
+            className="block relative w-full aspect-[16/9] sm:aspect-auto sm:h-[calc(100svh-150px)] sm:min-h-[360px] sm:max-h-[720px] bg-[#F5EFE6]"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={s.img} alt={s.alt} className="absolute inset-0 w-full h-full object-cover" loading={i === 0 ? 'eager' : 'lazy'} />
+          </Link>
+        ))}
       </Carousel>
     </section>
   );

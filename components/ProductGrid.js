@@ -33,7 +33,7 @@ export default function ProductGrid({ category, sub, search, limit }) {
 
   if (!items) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
         {Array.from({ length: limit || 8 }).map((_, i) => <Skeleton key={i} />)}
       </div>
     );
@@ -49,7 +49,7 @@ export default function ProductGrid({ category, sub, search, limit }) {
   }
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-8">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-x-4 gap-y-8">
       {items.map((p, i) => <ProductCard key={p.id} p={p} index={i} />)}
     </div>
   );
