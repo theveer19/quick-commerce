@@ -11,16 +11,30 @@ import { BRAND } from '@/lib/config';
 
 const MAROON = '#8C1C13';
 
+// Live ETA: counts down from (order time + promised minutes). Never sticks at
+// a flat "~30 min" — once the window passes it shows "Arriving soon".
+function etaInfo(order) {
+  if (order.status === 'delivered') return { label: 'Status', value: 'Delivered', chip: 'Delivered', done: true };
+  if (order.status === 'cancelled') return { label: 'Status', value: 'Cancelled', chip: 'Cancelled', done: true };
+  const created = new Date(order.created_at).getTime();
+  if (!created || isNaN(created)) return { label: 'Arriving in', value: `~${BRAND.etaMinutes} min`, chip: `Arriving in ~${BRAND.etaMinutes} min` };
+  const remainMin = Math.round((created + BRAND.etaMinutes * 60000 - Date.now()) / 60000);
+  if (remainMin >= 1) return { label: 'Arriving in', value: `~${remainMin} min`, chip: `Arriving in ~${remainMin} min` };
+  return { label: 'Arriving', value: 'Soon', chip: 'Arriving soon' };
+}
+
 export default function OrderPage() {
   const { code } = useParams();
   const [order, setOrder] = useState(undefined);
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     let alive = true;
     const load = () => fetchOrder(code).then((o) => { if (alive) setOrder(o); });
     load();
     const t = setInterval(load, 6000); // live refresh
-    return () => { alive = false; clearInterval(t); };
+    const c = setInterval(() => setTick((n) => n + 1), 30000); // ETA countdown re-render
+    return () => { alive = false; clearInterval(t); clearInterval(c); };
   }, [code]);
 
   if (order === undefined) return <div className="mx-auto max-w-3xl px-4 py-20 text-muted">Loading…</div>;
@@ -35,6 +49,7 @@ export default function OrderPage() {
   const stage = order.status === 'cancelled' ? -1 : ORDER_STAGES.indexOf(order.status);
   const done = order.status === 'delivered';
   const paid = order.payment_status?.startsWith('paid');
+  const eta = etaInfo(order);
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:py-10">
@@ -47,7 +62,7 @@ export default function OrderPage() {
 
       {order.status !== 'cancelled' && (
         <div className="mb-6">
-          <MapTracker status={order.status} etaMinutes={BRAND.etaMinutes} rider={order.delivery_partner} />
+          <MapTracker status={order.status} etaText={eta.chip} rider={order.delivery_partner} />
         </div>
       )}
 
@@ -61,8 +76,8 @@ export default function OrderPage() {
             </a>
           </div>
           <div className="text-right">
-            <p className="text-sm text-muted">{done ? 'Status' : 'Arriving in'}</p>
-            <p className="font-display text-2xl font-bold" style={{ color: MAROON }}>{done ? 'Delivered' : `~${BRAND.etaMinutes} min`}</p>
+            <p className="text-sm text-muted">{eta.label}</p>
+            <p className="font-display text-2xl font-bold" style={{ color: MAROON }}>{eta.value}</p>
           </div>
         </div>
 

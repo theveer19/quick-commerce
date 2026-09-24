@@ -31,7 +31,8 @@ function statusLine(status, hasRider) {
   }
 }
 
-export default function MapTracker({ status = 'confirmed', etaMinutes = BRAND.etaMinutes, rider }) {
+export default function MapTracker({ status = 'confirmed', etaMinutes = BRAND.etaMinutes, etaText, rider }) {
+  const etaLabel = etaText || `Arriving in ~${etaMinutes} min`;
   const pathRef = useRef(null);
   const [len, setLen] = useState(0);
   const [frac, setFrac] = useState(0.02);
@@ -118,7 +119,7 @@ export default function MapTracker({ status = 'confirmed', etaMinutes = BRAND.et
         {/* ETA / status chip */}
         {!done && !cancelled && (
           <div className="absolute top-3 left-3 bg-white rounded-full shadow-soft border border-line px-3 py-1.5 text-sm font-semibold flex items-center gap-1.5" style={{ color: MAROON }}>
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Arriving in ~{etaMinutes} min
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> {etaLabel}
           </div>
         )}
         {done && <div className="absolute top-3 left-3 bg-emerald-600 text-white rounded-full shadow-soft px-3 py-1.5 text-sm font-semibold">Delivered 🎉</div>}
