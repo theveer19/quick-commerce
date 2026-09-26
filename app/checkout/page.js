@@ -10,6 +10,7 @@ import { listAddresses } from '@/lib/addresses';
 import { useAuthModal } from '@/lib/auth-modal';
 import { inr, orderCode, cx } from '@/lib/format';
 import { BRAND, RAZORPAY_KEY_ID } from '@/lib/config';
+import { fbTrack } from '@/lib/fbpixel';
 
 const MAROON = '#8C1C13';
 const MAROON_DARK = '#6E140D';
@@ -66,6 +67,13 @@ export default function CheckoutPage() {
       () => {},
       { enableHighAccuracy: true, timeout: 8000 }
     );
+  }, []);
+
+  // Meta Pixel: fire InitiateCheckout once when the checkout opens with items
+  useEffect(() => {
+    const its = useCart.getState().items;
+    if (its.length) fbTrack('InitiateCheckout', { value: its.reduce((a, i) => a + i.qty * i.price, 0), currency: 'INR', num_items: its.reduce((a, i) => a + i.qty, 0) });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -157,7 +165,17 @@ export default function CheckoutPage() {
     coupon: appliedCode || null,
   });
 
-  const finish = (code) => { clear(); router.push(`/order/${code}`); };
+  const finish = (code) => {
+    fbTrack('Purchase', {
+      value: total,
+      currency: 'INR',
+      content_type: 'product',
+      content_ids: items.map((i) => i.id),
+      num_items: items.reduce((a, i) => a + i.qty, 0),
+    });
+    clear();
+    router.push(`/order/${code}`);
+  };
 
   const showError = (msg) => {
     setErr(msg);

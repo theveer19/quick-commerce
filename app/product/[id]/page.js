@@ -8,6 +8,7 @@ import { useCart } from '@/lib/cart';
 import { useWishlist } from '@/lib/wishlist';
 import { inr, cx } from '@/lib/format';
 import { BRAND } from '@/lib/config';
+import { fbTrack } from '@/lib/fbpixel';
 
 const MAROON = '#8C1C13';
 
@@ -41,6 +42,7 @@ export default function ProductPage() {
       setP(prod);
       if (prod?.sizes?.length) setSize(prod.sizes[0]);
       if (prod?.colors?.length) setColor((prod.colors[0].name) || prod.colors[0]);
+      if (prod) fbTrack('ViewContent', { content_ids: [prod.id], content_name: prod.name, content_type: 'product', value: prod.price, currency: 'INR' });
     });
   }, [id]);
 

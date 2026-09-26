@@ -2,6 +2,7 @@ import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
+import FbPixel from '@/components/FbPixel';
 import { BRAND } from '@/lib/config';
 
 export const metadata = {
@@ -34,6 +35,7 @@ export default function RootLayout({ children }) {
         />
       </head>
       <body className="font-body grain min-h-screen flex flex-col">
+        <FbPixel />
         <Navbar />
         <main className="flex-1 relative z-[2]">{children}</main>
         <Footer />
