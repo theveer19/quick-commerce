@@ -8,7 +8,7 @@ function fmtDT(v) {
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, MapPin, Truck, Check, FileText } from 'lucide-react';
-import { adminListOrders, updateOrderStatus, updateOrderPartner, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
+import { adminListOrders, updateOrderStatus, updateOrderPartner, reconcilePayments, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
 import { inr, cx } from '@/lib/format';
 
 const STATUS_OPTIONS = [...ORDER_STAGES, 'cancelled'];
@@ -28,6 +28,27 @@ export default function AdminOrders() {
   useEffect(() => { load(); }, []);
 
   const [toast, setToast] = useState('');
+  const [checking, setChecking] = useState(false);
+
+  // Razorpay is the source of truth for money. This asks it about every prepaid
+  // order the site failed to record, and fixes the rows.
+  const checkPayments = async () => {
+    setChecking(true);
+    try {
+      const r = await reconcilePayments();
+      const bits = [`${r.checked} checked`];
+      if (r.paid) bits.push(`${r.paid} were paid and are now marked paid`);
+      if (r.failed) bits.push(`${r.failed} failed`);
+      if (r.unpaid) bits.push(`${r.unpaid} never paid`);
+      if (r.errors) bits.push(`${r.errors} could not be read`);
+      setToast(bits.join(' · '));
+      load();
+    } catch (e) {
+      setToast(e.message || 'Could not check payments');
+    } finally {
+      setChecking(false);
+    }
+  };
   const notify = (m) => { setToast(m); setTimeout(() => setToast(''), 4500); };
 
   const setStatus = async (code, status) => {
@@ -59,8 +80,16 @@ export default function AdminOrders() {
         </div>
       )}
       <div>
-      <h1 className="font-display text-2xl font-bold text-ivory">Orders</h1>
-      <p className="text-muted text-sm mt-1">Update status to move the customer&apos;s live tracking.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-ivory">Orders</h1>
+          <p className="text-muted text-sm mt-1">Update status to move the customer&apos;s live tracking.</p>
+        </div>
+        <button onClick={checkPayments} disabled={checking}
+          className="shrink-0 rounded-full border border-line px-4 py-2 text-sm font-semibold text-grape hover:bg-lilacbg/40 disabled:opacity-60">
+          {checking ? 'Checking Razorpay…' : 'Check pending payments'}
+        </button>
+      </div>
 
       <div className="mt-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {['all', 'active', ...STATUS_OPTIONS].map((f) => (
