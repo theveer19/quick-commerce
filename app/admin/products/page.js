@@ -177,7 +177,6 @@ function ProductModal({ initial, onClose, onSaved }) {
           <span className="text-xs text-muted">Category</span>
           <select value={form.category} onChange={set('category')} className="mt-1 w-full bg-ink border border-line rounded-lg px-3 py-2.5 text-sm outline-none focus:border-violet">
             {CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-            <option value="rakhi">Rakhi</option>
           </select>
         </label>
         <label className="block">
