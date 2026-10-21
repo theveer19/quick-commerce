@@ -8,7 +8,7 @@ function fmtDT(v) {
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, MapPin, Truck, Check, FileText } from 'lucide-react';
-import { adminListOrders, updateOrderStatus, updateOrderPartner, reconcilePayments, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
+import { adminListOrders, updateOrderStatus, updateOrderPartner, updateOrderCustomer, reconcilePayments, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
 import { inr, cx } from '@/lib/format';
 
 const STATUS_OPTIONS = [...ORDER_STAGES, 'cancelled'];
@@ -65,6 +65,15 @@ export default function AdminOrders() {
     } catch (e) { notify('Could not assign partner: ' + (e.message || 'unknown')); return; }
     load();
     setDetail((d) => (d && d.code === code ? { ...d, delivery_partner: partner } : d));
+  };
+
+  const saveCustomer = async (code, customer) => {
+    try {
+      await updateOrderCustomer(code, customer);
+    } catch (e) { notify('Could not save customer details: ' + (e.message || 'unknown')); return; }
+    load();
+    setDetail((d) => (d && d.code === code ? { ...d, customer: { ...(d.customer || {}), ...customer } } : d));
+    notify('Customer details updated');
   };
 
   const shown = (list || []).filter((o) => filter === 'all' ? true : filter === 'active' ? (o.status !== 'delivered' && o.status !== 'cancelled') : o.status === filter);
@@ -171,8 +180,7 @@ export default function AdminOrders() {
               </div>
 
               <div className="mt-6 rounded-xl border border-line p-4">
-                <p className="text-sm text-ivory font-medium">{detail.customer?.name}</p>
-                <p className="text-sm text-muted mt-1 flex items-center gap-2"><Phone size={14} /> {detail.customer?.phone}</p>
+                <CustomerEditor key={`c-${detail.code}`} detail={detail} onSave={saveCustomer} />
                 <p className="text-sm text-muted mt-1 flex items-start gap-2"><MapPin size={14} className="mt-0.5" /> {detail.address?.line}, {detail.address?.landmark && detail.address.landmark + ', '}{detail.address?.city} - {detail.address?.pincode}</p>
                 {detail.address?.notes && <p className="text-xs text-muted mt-2">Note: {detail.address.notes}</p>}
                 <a
@@ -228,6 +236,62 @@ export default function AdminOrders() {
   );
 }
 
+
+/** The name and number the customer typed at checkout, correctable in place. */
+function CustomerEditor({ detail, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(detail.customer?.name || '');
+  const [phone, setPhone] = useState(detail.customer?.phone || '');
+  const [busy, setBusy] = useState(false);
+
+  const save = async () => {
+    setBusy(true);
+    try { await onSave(detail.code, { name: name.trim(), phone: phone.trim() }); setEditing(false); } catch {}
+    setBusy(false);
+  };
+  const cancel = () => {
+    setName(detail.customer?.name || '');
+    setPhone(detail.customer?.phone || '');
+    setEditing(false);
+  };
+
+  if (!editing) {
+    return (
+      <>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-sm text-ivory font-medium">{detail.customer?.name}</p>
+          <button onClick={() => setEditing(true)} className="shrink-0 text-xs text-grape hover:underline">Edit</button>
+        </div>
+        <p className="text-sm text-muted mt-1 flex items-center gap-2"><Phone size={14} /> {detail.customer?.phone}</p>
+      </>
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      <input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Customer name"
+        className="bg-ink border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-violet"
+      />
+      <input
+        value={phone}
+        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+        inputMode="numeric"
+        placeholder="10-digit phone"
+        className="bg-ink border border-line rounded-lg px-3 py-2 text-sm outline-none focus:border-violet"
+      />
+      <div className="flex items-center gap-2">
+        <button onClick={save} disabled={busy} className="inline-flex items-center gap-1.5 rounded-full bg-rose text-white px-4 py-1.5 text-xs font-semibold disabled:opacity-60">
+          {busy ? 'Saving…' : <><Check size={13} /> Save</>}
+        </button>
+        <button onClick={cancel} disabled={busy} className="text-xs text-muted hover:text-ivory">Cancel</button>
+      </div>
+      <p className="text-[11px] text-muted">The customer sees this name on their order and bill.</p>
+    </div>
+  );
+}
 
 function PartnerEditor({ detail, onSave }) {
   const [name, setName] = useState(detail.delivery_partner?.name || '');
