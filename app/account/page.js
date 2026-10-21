@@ -138,7 +138,7 @@ export default function AccountPage() {
               <div className="max-w-md">
                 <p className="text-muted">Need help with an order or something else? We’re here for you.</p>
                 <div className="mt-4 space-y-3">
-                  <a href={`tel:${BRAND.phone}`} className="flex items-center gap-3 rounded-xl border border-line bg-white p-4 shadow-soft hover:shadow-card transition">
+                  <a href={`tel:${BRAND.phoneTel}`} className="flex items-center gap-3 rounded-xl border border-line bg-white p-4 shadow-soft hover:shadow-card transition">
                     <Headphones size={18} className="text-grape" /> <span className="text-ivory font-medium">Call us: {BRAND.phone}</span>
                   </a>
                   <Link href="/help" className="flex items-center gap-3 rounded-xl border border-line bg-white p-4 shadow-soft hover:shadow-card transition">

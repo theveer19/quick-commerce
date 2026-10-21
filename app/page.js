@@ -1,42 +1,12 @@
 'use client';
-import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight, BadgePercent, Truck, Gift, RefreshCcw, Zap, PackageCheck, ShieldCheck, ShoppingBag, Sparkles } from 'lucide-react';
+import { ArrowRight, Truck, Zap, PackageCheck, ShieldCheck } from 'lucide-react';
 import Hero from '@/components/Hero';
 import SaleBanner from '@/components/SaleBanner';
 import ProductRail from '@/components/ProductRail';
 import Reveal from '@/components/Reveal';
 import { BRAND } from '@/lib/config';
-
-const STORES = [
-  { key: 'onet', label: 'OneT India', tag: 'Fashion', grad: 'from-[#8C1C13] to-[#5E120C]', icon: ShoppingBag },
-  { key: 'ganesh', label: 'Ganesh Store', tag: 'Mala, Mithai & Pooja', grad: 'from-[#E4890C] to-[#B23A0E]', icon: Sparkles },
-];
-
-function StoreSwitcher({ store, setStore }) {
-  return (
-    <section className="mx-auto max-w-7xl px-4 sm:px-6 pt-5">
-      <div className="grid grid-cols-2 gap-3">
-        {STORES.map((s) => {
-          const active = store === s.key;
-          const Icon = s.icon;
-          return (
-            <button key={s.key} onClick={() => setStore(s.key)}
-              className={`relative overflow-hidden rounded-2xl px-5 py-4 text-left border transition-all ${active ? `bg-gradient-to-br ${s.grad} text-white border-transparent shadow-glow` : 'bg-white text-ivory border-line hover:border-[#8C1C13]'}`}>
-              <span className={`grid place-items-center w-9 h-9 rounded-xl mb-2 ${active ? 'bg-white/15 text-white' : 'bg-lilacbg text-[#8C1C13]'}`}><Icon size={18} /></span>
-              <span className="block font-display text-lg sm:text-xl font-extrabold leading-tight">{s.label}</span>
-              <span className={`block text-xs mt-0.5 ${active ? 'text-white/85' : 'text-muted'}`}>{s.tag}</span>
-            </button>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
-
-
 
 
 const steps = [
@@ -47,31 +17,18 @@ const steps = [
 ];
 
 export default function HomePage() {
-  const [store, setStore] = useState('onet');
   return (
     <>
       <Hero />
 
-      <StoreSwitcher store={store} setStore={setStore} />
+      {/* ── PRODUCT RAILS ── */}
+      <ProductRail eyebrow="Selling fast" title={`Trending in ${BRAND.city}`} limit={12} />
+      <ProductRail eyebrow="Just in" title="New arrivals" category="women" href="/products?category=women" limit={12} />
 
-      {store === 'ganesh' ? (
-        <>
-          {/* ── GANESH STORE ── */}
-          <ProductRail eyebrow="Ganesh Store" title="Pooja essentials" category="ganesh" href="/products?category=ganesh" limit={12} />
-          <ProductRail eyebrow="Festive picks" title="Mala, Mithai & Decor" category="ganesh" href="/products?category=ganesh" limit={12} />
-        </>
-      ) : (
-        <>
-          {/* ── PRODUCT RAILS ── */}
-          <ProductRail eyebrow="Selling fast" title={`Trending in ${BRAND.city}`} limit={12} />
-          <ProductRail eyebrow="Just in" title="New arrivals" category="women" href="/products?category=women" limit={12} />
+      {/* ── SALE ── */}
+      <SaleBanner />
 
-          {/* ── SALE ── */}
-          <SaleBanner />
-
-          <ProductRail eyebrow="Steal deals" title="Under ₹999" href="/products" limit={12} />
-        </>
-      )}
+      <ProductRail eyebrow="Steal deals" title="Under ₹999" href="/products" limit={12} />
 
       {/* ── HOW IT WORKS ── */}
       <section className="mx-auto max-w-7xl px-4 sm:px-6 py-14">

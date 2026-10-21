@@ -42,7 +42,7 @@ export default function HelpPage() {
       <p className="mt-3 text-muted text-lg">We&apos;re here for you. Track an order, read FAQs, or reach our team.</p>
 
       <div id="contact" className="mt-8 grid gap-3 sm:grid-cols-2">
-        <a href={`tel:${BRAND.phone}`} className="flex items-center gap-3 rounded-xl2 border border-line bg-surface p-5 hover:border-rose transition-colors">
+        <a href={`tel:${BRAND.phoneTel}`} className="flex items-center gap-3 rounded-xl2 border border-line bg-surface p-5 hover:border-rose transition-colors">
           <Phone className="text-rose" /> <div><p className="text-sm text-muted">Call us</p><p className="text-ivory font-medium">{BRAND.phone}</p></div>
         </a>
         <a href="#" className="flex items-center gap-3 rounded-xl2 border border-line bg-surface p-5 hover:border-mint transition-colors">
