@@ -56,7 +56,7 @@ export default function SaleBanner() {
             <Sparkles size={13} className="fill-white" /> Diwali Special
           </span>
           <h2 className="mt-3 font-display text-2xl sm:text-3xl font-bold leading-tight">
-            Up to <span className="text-[#FFD86B]">50% OFF</span><br />festive styles this Diwali 🪔
+            Up to <span className="text-[#FFD86B]">60% OFF</span><br />festive styles this Diwali 🪔
           </h2>
           <p className="mt-2 text-sm text-white/85">
             A new fit for every night of the festival, delivered in ~30 minutes. Try at your door, pay only for what you keep.
