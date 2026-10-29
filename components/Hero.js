@@ -3,10 +3,9 @@ import Link from 'next/link';
 import Carousel from './Carousel';
 
 // Brand-designed 16:9 hero banners (1672×941). The posters carry their own
-// headline, offer and CTA, so NOTHING may be cropped. The box always keeps the
-// poster's exact ratio; on a laptop, instead of cutting the top and bottom off
-// to fit the screen height, the whole banner is scaled down (narrower) so it
-// fits above the fold in full.
+// headline, offer and CTA, so NOTHING may be cropped: the box always keeps the
+// poster's exact ratio at full width (up to 1400px). On a laptop the bottom of
+// the banner may sit just below the fold, but it is never cut off.
 const SLIDES = [
   { img: '/banners/diwali.jpg', href: '/products', alt: 'OneT India Diwali Sale — up to 60% off festive fashion, delivered in minutes in Gwalior' },
   { img: '/banners/try-then-buy.jpg', href: '/products', alt: 'First Try Then Buy — OneT India' },
@@ -17,11 +16,7 @@ const SLIDES = [
 
 export default function Hero() {
   return (
-    <section
-      className="mx-auto w-full px-3 sm:px-5 pt-4"
-      // width so that (width × 941/1672) + header never exceeds the screen
-      style={{ maxWidth: 'min(1400px, calc((100svh - 150px) * 1.7769 + 40px))' }}
-    >
+    <section className="mx-auto max-w-[1400px] px-3 sm:px-5 pt-4">
       <Carousel autoPlay={4200} pauseOnHover={false} rounded="rounded-2xl sm:rounded-[1.5rem]" className="shadow-card">
         {SLIDES.map((s, i) => (
           <Link
