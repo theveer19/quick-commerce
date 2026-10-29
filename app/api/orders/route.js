@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import crypto from 'crypto';
 import Razorpay from 'razorpay';
 import { priceOrder } from '@/lib/pricing';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
@@ -6,17 +7,19 @@ import { rateLimit } from '@/lib/ratelimit';
 
 // Fire-and-forget order email to the store owner (via Resend).
 // Set RESEND_API_KEY + ORDER_NOTIFY_EMAIL in env to enable. No-op if unset.
+const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
 async function notifyOrderEmail(order) {
   try {
     const key = process.env.RESEND_API_KEY;
     const to = process.env.ORDER_NOTIFY_EMAIL || 'onetvision01@gmail.com';
     if (!key) return;
-    const itemsHtml = (order.items || []).map((i) => `<li>${i.name || 'Item'}${i.size ? ' · ' + i.size : ''}${i.color ? ' · ' + i.color : ''} × ${i.qty} — ₹${i.price * i.qty}</li>`).join('');
+    const itemsHtml = (order.items || []).map((i) => `<li>${esc(i.name || 'Item')}${i.size ? ' · ' + esc(i.size) : ''}${i.color ? ' · ' + esc(i.color) : ''} × ${Number(i.qty)} — ₹${Number(i.price) * Number(i.qty)}</li>`).join('');
     const a = order.address || {};
     const html = `
       <h2>New order ${order.code}</h2>
-      <p><b>Customer:</b> ${order.customer?.name || ''} (${order.customer?.phone || ''})</p>
-      <p><b>Address:</b> ${a.line || ''}${a.landmark ? ', ' + a.landmark : ''}, ${a.city || ''} - ${a.pincode || ''}${a.notes ? '<br>Note: ' + a.notes : ''}</p>
+      <p><b>Customer:</b> ${esc(order.customer?.name)} (${esc(order.customer?.phone)})</p>
+      <p><b>Address:</b> ${esc(a.line)}${a.landmark ? ', ' + esc(a.landmark) : ''}, ${esc(a.city)} - ${esc(a.pincode)}${a.notes ? '<br>Note: ' + esc(a.notes) : ''}</p>
       <p><b>Payment:</b> ${order.payment_method === 'razorpay' ? (order.payment_status === 'paid' ? 'Prepaid (Paid)' : 'Prepaid — PAYMENT PENDING (confirm on Razorpay before dispatch)') : 'Try & Buy (pay at door)'}</p>
       <p><b>Total: ₹${order.total}</b></p>
       <ul>${itemsHtml}</ul>
@@ -40,7 +43,7 @@ function makeCode() {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
-  const r = Math.random().toString(36).slice(2, 6).toUpperCase();
+  const r = crypto.randomBytes(4).toString('hex').slice(0, 6).toUpperCase();
   return `ONET-${y}${m}${day}-${r}`;
 }
 
@@ -90,8 +93,8 @@ export async function POST(req) {
       pincode,
       city: (address?.city || 'Gwalior').slice(0, 60),
       notes: (address?.notes || '').trim().slice(0, 200) || null,
-      lat: (address?.lat != null ? Number(address.lat) : null),
-      lng: (address?.lng != null ? Number(address.lng) : null),
+      lat: Number.isFinite(Number(address?.lat)) && address?.lat != null ? Number(address.lat) : null,
+      lng: Number.isFinite(Number(address?.lng)) && address?.lng != null ? Number(address.lng) : null,
     },
     items: priced.items,
     subtotal: priced.subtotal,
@@ -127,6 +130,29 @@ export async function POST(req) {
   // ── persist ──
   const admin = getSupabaseAdmin();
   if (admin) {
+    // Reserve stock FIRST, atomically. If two people race for the last piece,
+    // only one reservation succeeds and the other order is refused — nothing
+    // out of stock can ever be ordered.
+    const reserved = [];
+    const release = async () => {
+      for (const it of reserved) {
+        try { await admin.rpc('increment_stock', { p_id: it.id, p_qty: it.qty }); } catch {}
+      }
+    };
+    for (const it of priced.lines) {
+      const { data: ok, error: rErr } = await admin.rpc('reserve_stock', { p_id: it.id, p_qty: it.qty });
+      if (rErr) {
+        // reserve_stock not installed yet — fall back to the old guarded decrement
+        try { await admin.rpc('decrement_stock', { p_id: it.id, p_qty: it.qty }); } catch {}
+        continue;
+      }
+      if (ok !== true) {
+        await release();
+        return NextResponse.json({ error: `${it.name} just went out of stock. Please remove it from your bag.` }, { status: 409 });
+      }
+      reserved.push(it);
+    }
+
     let { error } = await admin.from('orders').insert(row);
     if (error) {
       console.error('[orders] insert error #1:', error.message, error.details || '', error.hint || '');
@@ -135,12 +161,9 @@ export async function POST(req) {
       const retry = await admin.from('orders').insert(rest);
       if (retry.error) {
         console.error('[orders] insert error #2:', retry.error.message, retry.error.details || '', retry.error.hint || '');
-        return NextResponse.json({ error: 'Could not place order. Try again.', detail: retry.error.message, hint: retry.error.hint || retry.error.details || null }, { status: 500 });
+        await release();
+        return NextResponse.json({ error: 'Could not place order. Try again.' }, { status: 500 });
       }
-    }
-    // atomic-per-row stock decrement (guarded so stock never goes negative)
-    for (const it of priced.items) {
-      try { await admin.rpc('decrement_stock', { p_id: it.id, p_qty: it.qty }); } catch {}
     }
     notifyOrderEmail(row);
     return NextResponse.json({ code, total: priced.total, persisted: true, razorpay });

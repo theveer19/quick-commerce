@@ -16,6 +16,7 @@ const AREAS = ['City Centre', 'Lashkar', 'Morar', 'Thatipur', 'DD Nagar', 'Gola 
 const NAV = [
   { label: 'Women', href: '/products?category=women' },
   { label: 'Men', href: '/products?category=men' },
+  { label: 'Unisex', href: '/products?category=unisex' },
   { label: 'Offers', href: '/offers' },
 ];
 

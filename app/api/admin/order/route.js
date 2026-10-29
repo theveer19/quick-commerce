@@ -25,6 +25,11 @@ export async function POST(req) {
   const { code, status, partner, customer } = body || {};
   if (!code) return NextResponse.json({ error: 'Missing order code' }, { status: 400 });
 
+  const ALLOWED = ['placed', 'confirmed', 'packed', 'out_for_delivery', 'delivered', 'cancelled'];
+  if (status !== undefined && !ALLOWED.includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+  if (partner !== undefined && partner !== null && (typeof partner !== 'object' || JSON.stringify(partner).length > 500))
+    return NextResponse.json({ error: 'Invalid delivery partner' }, { status: 400 });
+
   const patch = {};
   if (typeof status === 'string') {
     patch.status = status;
@@ -61,7 +66,7 @@ export async function POST(req) {
 
   if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
 
-  const { data, error } = await admin.from('orders').update(patch).eq('code', code).select().maybeSingle();
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  const { data, error } = await admin.from('orders').update(patch).eq('code', String(code).slice(0, 40)).select().maybeSingle();
+  if (error) return NextResponse.json({ error: 'Could not update order' }, { status: 500 });
   return NextResponse.json(data || { ok: true });
 }

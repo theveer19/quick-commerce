@@ -11,7 +11,7 @@ import { BRAND } from '@/lib/config';
 
 const steps = [
   { icon: Zap, title: 'Order in a tap', desc: 'Add today’s drops to your bag.' },
-  { icon: Truck, title: `~${BRAND.etaMinutes} min delivery`, desc: `Rider reaches you fast in ${BRAND.city}.` },
+  { icon: Truck, title: 'Delivered in minutes', desc: `Rider reaches you fast in ${BRAND.city}, ${BRAND.workingHours}.` },
   { icon: PackageCheck, title: 'Try at your door', desc: 'Keep what fits, return the rest.' },
   { icon: ShieldCheck, title: 'Pay for keeps', desc: 'UPI, card or cash — only for keeps.' },
 ];
@@ -60,7 +60,7 @@ export default function HomePage() {
           <div className="absolute inset-0 grid-bg opacity-40" aria-hidden />
           <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-[#E4890C]/25 blur-3xl" aria-hidden />
           <div className="relative">
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/12 text-white px-3 py-1 text-xs font-semibold"><Zap size={13} className="fill-white" /> ~{BRAND.etaMinutes} min delivery</span>
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/12 text-white px-3 py-1 text-xs font-semibold"><Zap size={13} className="fill-white" /> Delivery in minutes · {BRAND.workingHours}</span>
             <h2 className="mt-4 font-display text-3xl sm:text-5xl font-extrabold tracking-tight text-white text-balance">Your next outfit is minutes away.</h2>
             <p className="mt-3 text-white/80 max-w-md mx-auto">Free delivery over ₹{BRAND.freeDeliveryAbove}. Contactless & try-before-you-pay.</p>
             <Link href="/products" className="mt-7 inline-flex items-center gap-2 rounded-full bg-white text-[#8C1C13] px-8 py-4 font-semibold hover:bg-white/90 transition-colors">

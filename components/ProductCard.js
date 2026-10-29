@@ -6,6 +6,7 @@ import { Plus, Star, Heart } from 'lucide-react';
 import { useCart } from '@/lib/cart';
 import { useWishlist } from '@/lib/wishlist';
 import { inr } from '@/lib/format';
+import { outOfStock } from '@/lib/stock';
 
 export default function ProductCard({ p, index = 0 }) {
   const add = useCart((s) => s.add);
@@ -18,7 +19,7 @@ export default function ProductCard({ p, index = 0 }) {
   const wished = mounted && ids.includes(p.id);
 
   const off = p.mrp && p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
-  const low = p.stock > 0 && p.stock <= 5;
+  const out = outOfStock(p);
 
   return (
     <motion.div
@@ -35,12 +36,11 @@ export default function ProductCard({ p, index = 0 }) {
             <img src={p.image} alt={p.name} loading="lazy"
               className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
             {off > 0 && <span className="absolute top-3 left-3 bg-rose text-white text-[11px] font-bold px-2 py-1 rounded-full">{off}% OFF</span>}
-            {p.stock === 0 && (
-              <div className="absolute inset-0 bg-ivory/45 backdrop-blur-[1px] grid place-items-center">
-                <span className="text-sm font-semibold text-white">Sold out</span>
+            {out && (
+              <div className="absolute inset-0 bg-white/55 grid place-items-center">
+                <span className="rounded-full bg-ivory/85 text-white text-xs font-bold tracking-wide px-3 py-1.5">OUT OF STOCK</span>
               </div>
             )}
-            {low && <span className="absolute bottom-3 left-3 bg-white/90 text-rose shadow-soft text-[11px] font-semibold px-2 py-1 rounded-full">Only {p.stock} left</span>}
           </div>
         </Link>
 
@@ -70,8 +70,8 @@ export default function ProductCard({ p, index = 0 }) {
           )}
         </div>
         <button
-          onClick={() => add(p, p.sizes?.[0])}
-          disabled={p.stock === 0}
+          onClick={() => { if (!out) add(p, p.sizes?.[0]); }}
+          disabled={out}
           aria-label={`Add ${p.name} to cart`}
           className="shrink-0 grid place-items-center w-9 h-9 rounded-full bg-lilacbg border border-line text-ivory hover:bg-rose hover:text-white hover:border-rose transition-all active:scale-90 disabled:opacity-40 disabled:pointer-events-none"
         >

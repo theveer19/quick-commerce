@@ -9,6 +9,7 @@ import { useWishlist } from '@/lib/wishlist';
 import { inr, cx } from '@/lib/format';
 import { BRAND } from '@/lib/config';
 import { fbTrack } from '@/lib/fbpixel';
+import { outOfStock, maxQty } from '@/lib/stock';
 
 const MAROON = '#8C1C13';
 
@@ -55,21 +56,22 @@ export default function ProductPage() {
   );
 
   const off = p.mrp && p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
-  const low = p.stock > 0 && p.stock <= 5;
+  const out = outOfStock(p);
   const wished = mounted && wishIds.includes(p.id);
 
   const onAdd = () => {
+    if (outOfStock(p)) return;
     for (let i = 0; i < qty; i++) add(p, size, color);
     setAdded(true);
     setTimeout(() => setAdded(false), 1400);
   };
-  const onBuy = () => { for (let i = 0; i < qty; i++) add(p, size, color); router.push('/cart'); };
+  const onBuy = () => { if (outOfStock(p)) return; for (let i = 0; i < qty; i++) add(p, size, color); router.push('/cart'); };
 
   const specs = [
     ['Category', p.category ? String(p.category).replace(/(^|\s)\S/g, (t) => t.toUpperCase()) : 'Fashion'],
     ['Colour', color || (p.colors?.[0]?.name || p.colors?.[0]) || '—'],
     ['Sizes', p.sizes?.length ? p.sizes.join(', ') : 'Free Size'],
-    ['Delivery', `~${BRAND.etaMinutes} min in ${BRAND.city}`],
+    ['Delivery', `In minutes across ${BRAND.city} (${BRAND.workingHours})`],
     ['Returns', 'Try & Buy — pay only for what you keep'],
   ];
 
@@ -89,10 +91,7 @@ export default function ProductPage() {
             <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1">
               <Star size={12} className="fill-emerald-600 text-emerald-600" /> {p.rating || '4.5'}
             </span>
-            <span className={cx('text-xs font-semibold', p.stock > 0 ? 'text-emerald-600' : 'text-red-500')}>
-              {p.stock > 0 ? `In stock` : 'Sold out'}
-            </span>
-            {low && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ color: MAROON, backgroundColor: `${MAROON}14` }}>Only {p.stock} left</span>}
+            {out && <span className="text-xs font-bold px-2 py-0.5 rounded-full text-red-600 bg-red-50">Out of stock</span>}
           </div>
 
           <h1 className="mt-2.5 font-display text-2xl md:text-3xl font-bold text-ivory leading-tight">{p.name}</h1>
@@ -111,7 +110,7 @@ export default function ProductPage() {
             <span className="grid place-items-center w-9 h-9 rounded-full shrink-0" style={{ backgroundColor: `${MAROON}14`, color: MAROON }}><MapPin size={17} /></span>
             <div className="text-sm leading-tight">
               <p className="text-ivory font-semibold">Deliver to {loc}</p>
-              <p className="text-muted text-xs flex items-center gap-1"><Clock size={12} /> Fastest delivery in ~{BRAND.etaMinutes} min</p>
+              <p className="text-muted text-xs flex items-center gap-1"><Clock size={12} /> Delivered in minutes · {BRAND.workingHours}</p>
             </div>
           </div>
 
@@ -168,7 +167,7 @@ export default function ProductPage() {
             <div className="inline-flex items-center rounded-full border border-line overflow-hidden">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-11 h-11 grid place-items-center text-ivory hover:bg-lilacbg disabled:opacity-30" disabled={qty <= 1}><Minus size={16} /></button>
               <span className="w-10 text-center font-bold text-ivory">{qty}</span>
-              <button onClick={() => setQty((q) => Math.min(p.stock || 10, q + 1))} className="w-11 h-11 grid place-items-center text-ivory hover:bg-lilacbg disabled:opacity-30" disabled={qty >= (p.stock || 10)}><Plus size={16} /></button>
+              <button onClick={() => setQty((q) => Math.min(maxQty(p), q + 1))} className="w-11 h-11 grid place-items-center text-ivory hover:bg-lilacbg disabled:opacity-30" disabled={out || qty >= maxQty(p)}><Plus size={16} /></button>
             </div>
           </div>
 
@@ -179,13 +178,13 @@ export default function ProductPage() {
               style={{ borderColor: wished ? '#F43F8F' : '#E7E2F0' }}>
               <Heart size={20} className={wished ? 'fill-fashionpink text-fashionpink' : 'text-muted'} />
             </button>
-            <button onClick={onAdd} disabled={p.stock === 0}
+            <button onClick={onAdd} disabled={out}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-full text-white px-6 py-4 font-semibold transition-all active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: MAROON, boxShadow: `0 8px 22px ${MAROON}44` }}>
-              {added ? <><Check size={18} /> Added to bag</> : p.stock === 0 ? 'Sold out' : 'Add to bag'}
+              {added ? <><Check size={18} /> Added to bag</> : out ? 'Out of stock' : 'Add to bag'}
             </button>
           </div>
-          <button onClick={onBuy} disabled={p.stock === 0}
+          <button onClick={onBuy} disabled={out}
             className="mt-3 w-full rounded-full border-2 px-6 py-3.5 font-semibold transition-all active:scale-[0.98] disabled:opacity-40"
             style={{ borderColor: MAROON, color: MAROON }}>
             Buy now
@@ -193,7 +192,7 @@ export default function ProductPage() {
 
           {/* trust strip */}
           <div className="mt-7 grid grid-cols-3 gap-3">
-            {[[Truck, `~${BRAND.etaMinutes} min delivery`], [RefreshCw, 'Try before you pay'], [ShieldCheck, 'Secure payment']].map(([Icon, label]) => (
+            {[[Truck, 'Delivery in minutes'], [RefreshCw, 'Try before you pay'], [ShieldCheck, 'Secure payment']].map(([Icon, label]) => (
               <div key={label} className="rounded-xl border border-line bg-surface p-3 text-center">
                 <Icon size={18} className="mx-auto" style={{ color: MAROON }} />
                 <div className="mt-2 text-[11px] font-medium text-muted leading-tight">{label}</div>
@@ -223,12 +222,12 @@ export default function ProductPage() {
           <div className="font-display text-lg font-extrabold text-ivory">{inr(p.price)}</div>
           {off > 0 && <div className="text-[11px] text-muted line-through">{inr(p.mrp)}</div>}
         </div>
-        <button onClick={onBuy} disabled={p.stock === 0}
+        <button onClick={onBuy} disabled={out}
           className="flex-1 rounded-full text-white py-3.5 font-semibold active:scale-[0.98] disabled:opacity-40"
           style={{ backgroundColor: MAROON }}>
-          {p.stock === 0 ? 'Sold out' : 'Buy now'}
+          {out ? 'Out of stock' : 'Buy now'}
         </button>
-        <button onClick={onAdd} disabled={p.stock === 0}
+        <button onClick={onAdd} disabled={out}
           className="rounded-full border-2 px-5 py-3.5 font-semibold active:scale-[0.98] disabled:opacity-40"
           style={{ borderColor: MAROON, color: MAROON }}>
           {added ? <Check size={18} /> : 'Add'}

@@ -29,7 +29,9 @@ export async function POST(req) {
   if (!file || typeof file === 'string') return NextResponse.json({ error: 'No file provided' }, { status: 400 });
 
   const type = file.type || 'image/jpeg';
-  if (!type.startsWith('image/')) return NextResponse.json({ error: 'Only image files are allowed' }, { status: 400 });
+  // Raster images only — an SVG can carry script, and this bucket is public.
+  const OK = ['image/jpeg', 'image/png', 'image/webp', 'image/avif', 'image/gif'];
+  if (!OK.includes(type)) return NextResponse.json({ error: 'Upload a JPG, PNG, WEBP, AVIF or GIF image' }, { status: 400 });
   if (file.size && file.size > 10 * 1024 * 1024) return NextResponse.json({ error: 'Image too large (max 10MB)' }, { status: 400 });
 
   const ext = (type.split('/')[1] || 'jpg').replace('jpeg', 'jpg').split('+')[0];
@@ -37,7 +39,7 @@ export async function POST(req) {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   const { error: upErr } = await admin.storage.from(BUCKET).upload(key, buffer, { contentType: type, upsert: false });
-  if (upErr) return NextResponse.json({ error: upErr.message || 'Upload failed' }, { status: 500 });
+  if (upErr) return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
 
   const { data: pub } = admin.storage.from(BUCKET).getPublicUrl(key);
   return NextResponse.json({ url: pub.publicUrl });

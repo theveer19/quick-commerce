@@ -211,7 +211,7 @@ function ProductModal({ initial, onClose, onSaved }) {
         <div className="block">
           <span className="text-xs text-muted">Sizes</span>
           <div className="mt-1 flex flex-wrap gap-2">
-            {['S', 'M', 'L', 'XL', 'XXL', 'Free Size', '28', '30', '32', '34', '36', '38'].map((sz) => {
+            {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', 'Free Size', '26', '28', '30', '32', '34', '36', '38', '40'].map((sz) => {
               const list = String(form.sizes || '').split(',').map((x) => x.trim()).filter(Boolean);
               const on = list.includes(sz);
               const toggle = () => {
@@ -226,6 +226,18 @@ function ProductModal({ initial, onClose, onSaved }) {
               );
             })}
           </div>
+          <input
+            placeholder="Other sizes, comma separated (e.g. 5, 6, 7)"
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              const extra = e.currentTarget.value.split(',').map((x) => x.trim()).filter(Boolean);
+              const list = String(form.sizes || '').split(',').map((x) => x.trim()).filter(Boolean);
+              setForm((f) => ({ ...f, sizes: [...new Set([...list, ...extra])].join(', ') }));
+              e.currentTarget.value = '';
+            }}
+            className="mt-2 w-full bg-ink border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-violet" />
+          {form.sizes ? <p className="mt-1 text-[11px] text-muted">Selected: {form.sizes}</p> : null}
         </div>
         <F label="Colors (Name:#hex, comma separated)" full value={form.colors} onChange={set('colors')} placeholder="Black:#222222, White:#FFFFFF" />
         <label className="block sm:col-span-2">

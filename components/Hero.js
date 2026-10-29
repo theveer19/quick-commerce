@@ -6,9 +6,9 @@ import Carousel from './Carousel';
 // viewport so the whole banner fits above the fold (no scrolling); on mobile
 // it keeps the natural 16:9 ratio. object-cover fills edge-to-edge.
 const SLIDES = [
+  { img: '/banners/diwali.jpg', href: '/products', alt: 'OneT India Diwali Sale — up to 60% off festive fashion, delivered in minutes in Gwalior' },
   { img: '/banners/try-then-buy.jpg', href: '/products', alt: 'First Try Then Buy — OneT India' },
   { img: '/banners/good-vibes.jpg', href: '/products', alt: 'Fashion delivered to your door — OneT India' },
-  { img: '/banners/diwali.jpg', href: '/products', alt: 'OneT India Diwali Sale — up to 60% off festive fashion, 35-minute delivery in Gwalior' },
   { img: '/banners/zero-delivery.jpg', href: '/products', alt: '₹0 Delivery Fees on orders above ₹1000' },
   { img: '/banners/free-returns.jpg', href: '/products', alt: 'Free Returns — Hassle-free process' },
 ];

@@ -6,7 +6,8 @@ import { ChevronDown, MessageCircle, Phone, Mail, Package } from 'lucide-react';
 import { BRAND } from '@/lib/config';
 
 const faqs = [
-  { q: 'How fast is delivery?', a: `Most orders reach you in about ${BRAND.etaMinutes} minutes anywhere in ${BRAND.city}, depending on your location and order volume.` },
+  { q: 'How fast is delivery?', a: `Orders are delivered in minutes anywhere in ${BRAND.city}. Delivery can take longer during bad weather, heavy traffic or peak demand — you can track your order live.` },
+  { q: 'What are your delivery hours?', a: `We deliver every day from ${BRAND.workingHours}. ${BRAND.hoursNote}` },
   { q: 'What is Try & Buy?', a: 'You order items, our rider brings them to your door, you try them on, keep what you love and hand the rest back. You pay only for what you keep.' },
   { q: 'How do I pay?', a: 'Choose Try & Buy (pay at door via UPI/card/cash for kept items) or pay online securely via Razorpay at checkout.' },
   { q: 'Do you deliver outside Gwalior?', a: 'Not yet. We currently serve Gwalior only. We will expand soon — follow us for updates.' },

@@ -1,6 +1,6 @@
 import { BRAND } from '@/lib/config';
 
-export default function LegalPage({ title, updated = 'August 2026', intro, sections }) {
+export default function LegalPage({ title, updated = 'October 2026', intro, sections }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16">
       <p className="text-sm text-muted">Legal</p>

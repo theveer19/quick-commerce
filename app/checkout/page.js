@@ -9,7 +9,7 @@ import { getCurrentUser } from '@/lib/user-auth';
 import { listAddresses } from '@/lib/addresses';
 import { useAuthModal } from '@/lib/auth-modal';
 import { inr, orderCode, cx } from '@/lib/format';
-import { BRAND, RAZORPAY_KEY_ID } from '@/lib/config';
+import { BRAND, RAZORPAY_KEY_ID, isOpenNow } from '@/lib/config';
 import { fbTrack } from '@/lib/fbpixel';
 
 const MAROON = '#8C1C13';
@@ -42,6 +42,8 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, subtotal, clear } = useCart();
   const openAuth = useAuthModal((s) => s.openAuth);
+  const [openNow, setOpenNow] = useState(true);
+  useEffect(() => { setOpenNow(isOpenNow()); }, []);
   const [savedAddrs, setSavedAddrs] = useState([]);
   const [form, setForm] = useState(empty);
   const [errors, setErrors] = useState({});
@@ -350,8 +352,17 @@ export default function CheckoutPage() {
               <div className="flex justify-between font-display text-xl font-bold text-ivory pt-3 border-t border-line"><span>Total</span><span>{inr(total)}</span></div>
             </div>
 
+            <div className={cx('mt-4 flex items-start gap-2 rounded-xl px-3 py-2.5 text-xs leading-snug', openNow ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900')}>
+              <Truck size={14} className="mt-0.5 shrink-0" />
+              <span>
+                {openNow
+                  ? <>Delivered in minutes. {BRAND.delayNote}</>
+                  : <>We deliver {BRAND.workingHours}. {BRAND.hoursNote}</>}
+              </span>
+            </div>
+
             <button onClick={submit} disabled={busy}
-              className="mt-5 w-full inline-flex items-center justify-center gap-2 rounded-full text-white px-6 py-4 font-semibold transition-all active:scale-[0.99] disabled:opacity-60"
+              className="mt-4 w-full inline-flex items-center justify-center gap-2 rounded-full text-white px-6 py-4 font-semibold transition-all active:scale-[0.99] disabled:opacity-60"
               style={{ backgroundColor: MAROON, boxShadow: `0 10px 24px ${MAROON}44` }}>
               {busy ? <><Loader2 size={18} className="animate-spin" /> Processing…</> :
                 method === 'razorpay' ? `Pay ${inr(total)}` : `Place order · ${inr(total)}`}
@@ -364,7 +375,7 @@ export default function CheckoutPage() {
             )}
 
             <div className="mt-4 grid grid-cols-3 gap-2 border-t border-line pt-4">
-              {[[ShieldCheck, 'Secure'], [Truck, `~${BRAND.etaMinutes} min`], [Check, 'Easy returns']].map(([Icon, label]) => (
+              {[[ShieldCheck, 'Secure'], [Truck, 'In minutes'], [Check, 'Easy returns']].map(([Icon, label]) => (
                 <div key={label} className="flex flex-col items-center gap-1 text-center">
                   <Icon size={16} style={{ color: MAROON }} />
                   <span className="text-[10px] font-medium text-muted">{label}</span>

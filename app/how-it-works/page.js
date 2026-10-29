@@ -6,7 +6,7 @@ import { Sparkles, Truck, PackageCheck, ShieldCheck } from 'lucide-react';
 
 const steps = [
   { icon: Sparkles, t: 'Browse & add', d: 'Explore live fashion drops across women, men, footwear, ethnic and more. Add anything you want to try.' },
-  { icon: Truck, t: `Delivered in ~${BRAND.etaMinutes} min`, d: `Our rider brings your picks to your door anywhere in ${BRAND.city}, fast.` },
+  { icon: Truck, t: 'Delivered in minutes', d: `Our rider brings your picks to your door anywhere in ${BRAND.city}, fast.` },
   { icon: PackageCheck, t: 'Try at your door', d: 'Try everything on in the comfort of home. Keep what fits and looks great.' },
   { icon: ShieldCheck, t: 'Pay for keeps', d: 'Return the rest to the rider on the spot. Pay only for what you keep — UPI, card or cash.' },
 ];
