@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, ShieldCheck, Truck, RefreshCw, Check, ChevronLeft, ChevronRight, ArrowLeft, MapPin, Heart, Minus, Plus, Tag, Clock, BadgeCheck } from 'lucide-react';
+import { Star, ShieldCheck, Truck, RefreshCw, Check, ChevronLeft, ChevronRight, ArrowLeft, MapPin, Heart, Minus, Plus, Tag, Clock, BadgeCheck, Maximize2, X } from 'lucide-react';
 import { fetchProduct } from '@/lib/data';
 import { useCart } from '@/lib/cart';
 import { useWishlist } from '@/lib/wishlist';
@@ -240,21 +240,47 @@ export default function ProductPage() {
 
 function Gallery({ images, name, off }) {
   const [active, setActive] = useState(0);
+  const [zoom, setZoom] = useState(false);
   const list = images.length ? images : [''];
   const go = (d) => setActive((a) => (a + d + list.length) % list.length);
+
+  // keyboard + scroll lock while the full-screen viewer is open
+  useEffect(() => {
+    if (!zoom) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setZoom(false);
+      if (e.key === 'ArrowLeft') go(-1);
+      if (e.key === 'ArrowRight') go(1);
+    };
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', onKey);
+    return () => { window.removeEventListener('keydown', onKey); document.body.style.overflow = prev; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [zoom, list.length]);
+
   return (
-    <div className="md:sticky md:top-24 self-start">
+    // Sticks just below the header (~124px) instead of sliding under it, and is
+    // never taller than the screen — so the whole product is always in view.
+    <div className="md:sticky md:top-[140px] self-start">
       <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }}
-        className="relative aspect-[3/4] rounded-[1.5rem] overflow-hidden border border-line bg-surface">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={list[active]} alt={name} className="h-full w-full object-cover" />
-        {off > 0 && <span className="absolute top-4 left-4 text-white text-sm font-bold px-3 py-1 rounded-full" style={{ backgroundColor: MAROON }}>{off}% OFF</span>}
+        className="relative aspect-[3/4] md:aspect-auto md:h-[calc(100svh_-_170px)] md:min-h-[420px] md:max-h-[760px] rounded-[1.5rem] overflow-hidden border border-line bg-white">
+        <button type="button" onClick={() => setZoom(true)} aria-label="View full image"
+          className="absolute inset-0 w-full h-full cursor-zoom-in">
+          {/* contain, not cover: the full garment is shown, nothing cut off */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={list[active]} alt={name} className="h-full w-full object-contain" />
+        </button>
+        {off > 0 && <span className="absolute top-4 left-4 text-white text-sm font-bold px-3 py-1 rounded-full pointer-events-none" style={{ backgroundColor: MAROON }}>{off}% OFF</span>}
+        <span className="absolute top-4 right-4 hidden md:inline-flex items-center gap-1 rounded-full bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-ivory shadow-soft pointer-events-none">
+          <Maximize2 size={12} /> Click to view
+        </span>
         {list.length > 1 && (
           <>
-            <button onClick={() => go(-1)} className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/85 backdrop-blur grid place-items-center shadow-soft hover:bg-white"><ChevronLeft size={20} className="text-ivory" /></button>
-            <button onClick={() => go(1)} className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/85 backdrop-blur grid place-items-center shadow-soft hover:bg-white"><ChevronRight size={20} className="text-ivory" /></button>
-            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5">
-              {list.map((_, i) => <span key={i} className={cx('h-1.5 rounded-full transition-all', i === active ? 'w-5 bg-white' : 'w-1.5 bg-white/60')} />)}
+            <button onClick={() => go(-1)} aria-label="Previous image" className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/85 backdrop-blur grid place-items-center shadow-soft hover:bg-white"><ChevronLeft size={20} className="text-ivory" /></button>
+            <button onClick={() => go(1)} aria-label="Next image" className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/85 backdrop-blur grid place-items-center shadow-soft hover:bg-white"><ChevronRight size={20} className="text-ivory" /></button>
+            <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 pointer-events-none">
+              {list.map((_, i) => <span key={i} className={cx('h-1.5 rounded-full transition-all', i === active ? 'w-5' : 'w-1.5 opacity-50')} style={{ backgroundColor: MAROON }} />)}
             </div>
           </>
         )}
@@ -262,12 +288,42 @@ function Gallery({ images, name, off }) {
       {list.length > 1 && (
         <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar">
           {list.map((url, i) => (
-            <button key={i} onClick={() => setActive(i)} className="shrink-0 w-16 h-20 rounded-xl overflow-hidden border-2 transition"
+            <button key={i} onClick={() => setActive(i)} className="shrink-0 w-16 h-20 rounded-xl overflow-hidden border-2 transition bg-white"
               style={{ borderColor: i === active ? MAROON : '#E7E2F0' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className="w-full h-full object-cover" />
+              <img src={url} alt="" className="w-full h-full object-contain" />
             </button>
           ))}
+        </div>
+      )}
+
+      {/* ── full-screen viewer: just the photo, nothing else ── */}
+      {zoom && (
+        <div className="fixed inset-0 z-[400] bg-black/90 flex flex-col" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label={name}>
+          <div className="flex items-center justify-between px-4 py-3 text-white/80 text-sm">
+            <span className="truncate pr-4">{name}{list.length > 1 ? ` · ${active + 1}/${list.length}` : ''}</span>
+            <button onClick={() => setZoom(false)} aria-label="Close" className="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"><X size={20} /></button>
+          </div>
+          <div className="relative flex-1 min-h-0 flex items-center justify-center px-2 pb-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={list[active]} alt={name} onClick={(e) => e.stopPropagation()} className="max-h-full max-w-full object-contain select-none" />
+            {list.length > 1 && (
+              <>
+                <button onClick={(e) => { e.stopPropagation(); go(-1); }} aria-label="Previous image" className="absolute left-3 md:left-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 grid place-items-center text-white"><ChevronLeft size={22} /></button>
+                <button onClick={(e) => { e.stopPropagation(); go(1); }} aria-label="Next image" className="absolute right-3 md:right-6 top-1/2 -translate-y-1/2 w-11 h-11 rounded-full bg-white/15 hover:bg-white/25 grid place-items-center text-white"><ChevronRight size={22} /></button>
+              </>
+            )}
+          </div>
+          {list.length > 1 && (
+            <div className="flex justify-center gap-2 pb-5 px-4 overflow-x-auto no-scrollbar" onClick={(e) => e.stopPropagation()}>
+              {list.map((url, i) => (
+                <button key={i} onClick={() => setActive(i)} className="shrink-0 w-12 h-16 rounded-lg overflow-hidden border-2 bg-white" style={{ borderColor: i === active ? '#fff' : 'transparent', opacity: i === active ? 1 : 0.6 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={url} alt="" className="w-full h-full object-contain" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
