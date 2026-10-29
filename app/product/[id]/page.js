@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Star, ShieldCheck, Truck, RefreshCw, Check, ChevronLeft, ChevronRight, ArrowLeft, MapPin, Heart, Minus, Plus, Tag, Clock, BadgeCheck, Maximize2, X } from 'lucide-react';
@@ -297,9 +298,12 @@ function Gallery({ images, name, off }) {
         </div>
       )}
 
-      {/* ── full-screen viewer: just the photo, nothing else ── */}
-      {zoom && (
-        <div className="fixed inset-0 z-[400] bg-black/90 flex flex-col" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label={name}>
+      {/* ── full-screen viewer: just the photo, nothing else ──
+          Rendered into <body> through a portal. Inside the sticky gallery it
+          shared that box's stacking layer, so the colour swatch and the navbar
+          painted on top of it. At body level nothing can sit above it. */}
+      {zoom && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[9999] bg-black/95 flex flex-col" onClick={() => setZoom(false)} role="dialog" aria-modal="true" aria-label={name}>
           <div className="flex items-center justify-between px-4 py-3 text-white/80 text-sm">
             <span className="truncate pr-4">{name}{list.length > 1 ? ` · ${active + 1}/${list.length}` : ''}</span>
             <button onClick={() => setZoom(false)} aria-label="Close" className="w-10 h-10 grid place-items-center rounded-full bg-white/10 hover:bg-white/20 text-white"><X size={20} /></button>
@@ -324,7 +328,8 @@ function Gallery({ images, name, off }) {
               ))}
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );
