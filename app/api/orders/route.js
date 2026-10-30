@@ -4,8 +4,9 @@ import Razorpay from 'razorpay';
 import { priceOrder } from '@/lib/pricing';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
+import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
 
-// Fire-and-forget order email to the store owner (via Resend).
+// Order email to the store owner (via Resend).
 // Set RESEND_API_KEY + ORDER_NOTIFY_EMAIL in env to enable. No-op if unset.
 const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -13,7 +14,7 @@ async function notifyOrderEmail(order) {
   try {
     const key = process.env.RESEND_API_KEY;
     const to = process.env.ORDER_NOTIFY_EMAIL || 'onetvision01@gmail.com';
-    if (!key) return;
+    if (!key) { console.error('[order-email] RESEND_API_KEY is not set — owner email skipped'); return; }
     const itemsHtml = (order.items || []).map((i) => `<li>${esc(i.name || 'Item')}${i.size ? ' · ' + esc(i.size) : ''}${i.color ? ' · ' + esc(i.color) : ''} × ${Number(i.qty)} — ₹${Number(i.price) * Number(i.qty)}</li>`).join('');
     const a = order.address || {};
     const html = `
@@ -24,12 +25,16 @@ async function notifyOrderEmail(order) {
       <p><b>Total: ₹${order.total}</b></p>
       <ul>${itemsHtml}</ul>
       <p>Placed at ${new Date(order.created_at).toLocaleString('en-IN')}</p>`;
-    await fetch('https://api.resend.com/emails', {
+    const from = process.env.ORDER_EMAIL_FROM || 'OneT India <onboarding@resend.dev>';
+    const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ from: 'OneT India <onboarding@resend.dev>', to: [to], subject: `🛍️ New order ${order.code} — ₹${order.total}`, html }),
+      body: JSON.stringify({ from, to: [to], subject: `🛍️ New order ${order.code} — ₹${order.total}`, html }),
     });
-  } catch (e) { /* never block the order on email failure */ }
+    // Resend says WHY it refused (bad key, sandbox sender, unverified domain) —
+    // put that in the Vercel logs instead of swallowing it.
+    if (!r.ok) console.error('[order-email] Resend refused', r.status, await r.text().catch(() => ''));
+  } catch (e) { console.error('[order-email] failed', e?.message); /* never block the order */ }
 }
 
 export const runtime = 'nodejs';
@@ -165,7 +170,13 @@ export async function POST(req) {
         return NextResponse.json({ error: 'Could not place order. Try again.' }, { status: 500 });
       }
     }
-    notifyOrderEmail(row);
+    // Owner email + customer push. Awaited (with a cap): on Vercel a function
+    // can be frozen the moment it responds, which used to drop these silently.
+    // A prepaid order gets its customer push once the payment is confirmed.
+    await Promise.allSettled([
+      withTimeout(notifyOrderEmail(row), 6000),
+      method === 'razorpay' ? null : withTimeout(notifyOrderStatus(admin, row, 'placed'), 5000),
+    ]);
     return NextResponse.json({ code, total: priced.total, persisted: true, razorpay });
   }
 

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Instagram, MessageCircle, MapPin } from 'lucide-react';
 import { BRAND } from '@/lib/config';
+import PlayBadge from './PlayBadge';
 
 const groups = [
   {
@@ -56,6 +57,10 @@ export default function Footer() {
             <div className="mt-4 flex gap-3">
               <a href="#" aria-label="Instagram" className="p-2.5 rounded-full border border-line hover:border-[#8C1C13] hover:text-[#8C1C13] transition-colors"><Instagram size={18} /></a>
               <a href="#" aria-label="WhatsApp" className="p-2.5 rounded-full border border-line hover:border-mint hover:text-mint transition-colors"><MessageCircle size={18} /></a>
+            </div>
+            <div className="mt-5">
+              <p className="text-xs font-semibold uppercase tracking-wider text-muted mb-2">Get the app</p>
+              <PlayBadge />
             </div>
           </div>
           {groups.map((g) => (

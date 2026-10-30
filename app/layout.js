@@ -3,6 +3,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
 import FbPixel from '@/components/FbPixel';
+import AppPromo from '@/components/AppPromo';
 import { BRAND } from '@/lib/config';
 
 export const metadata = {
@@ -40,6 +41,7 @@ export default function RootLayout({ children }) {
         <main className="flex-1 relative z-[2]">{children}</main>
         <Footer />
         <AuthModal />
+        <AppPromo />
       </body>
     </html>
   );

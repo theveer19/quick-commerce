@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
+import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -56,7 +57,7 @@ export async function POST(req) {
   const { data, error } = await admin.from('orders')
     .update(patch)
     .eq('razorpay_order_id', razorpay_order_id)
-    .select('code,status')
+    .select('code,status,customer')
     .maybeSingle();
 
   if (error || !data) {
@@ -70,6 +71,7 @@ export async function POST(req) {
   // packed or delivered order back to "confirmed".
   if (data.status === 'placed') {
     await admin.from('orders').update({ status: 'confirmed' }).eq('code', data.code);
+    await withTimeout(notifyOrderStatus(admin, data, 'confirmed'), 5000);
   }
 
   return NextResponse.json({ verified: true, recorded: true });

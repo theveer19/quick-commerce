@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
+import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -66,7 +67,14 @@ export async function POST(req) {
 
   if (!Object.keys(patch).length) return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
 
+  // Remember the old status so the customer is only notified on a real change.
+  const { data: before } = await admin.from('orders').select('status').eq('code', String(code).slice(0, 40)).maybeSingle();
+
   const { data, error } = await admin.from('orders').update(patch).eq('code', String(code).slice(0, 40)).select().maybeSingle();
   if (error) return NextResponse.json({ error: 'Could not update order' }, { status: 500 });
+
+  if (data && typeof status === 'string' && before?.status !== status) {
+    await withTimeout(notifyOrderStatus(admin, data, status), 5000);
+  }
   return NextResponse.json(data || { ok: true });
 }
