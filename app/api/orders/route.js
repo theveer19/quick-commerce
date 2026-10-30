@@ -5,6 +5,7 @@ import { priceOrder } from '@/lib/pricing';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
 import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
+import { EMAIL_RE } from '@/lib/mailer';
 
 // Order email to the store owner (via Resend).
 // Set RESEND_API_KEY + ORDER_NOTIFY_EMAIL in env to enable. No-op if unset.
@@ -19,7 +20,7 @@ async function notifyOrderEmail(order) {
     const a = order.address || {};
     const html = `
       <h2>New order ${order.code}</h2>
-      <p><b>Customer:</b> ${esc(order.customer?.name)} (${esc(order.customer?.phone)})</p>
+      <p><b>Customer:</b> ${esc(order.customer?.name)} (${esc(order.customer?.phone)})${order.customer?.email ? ' · ' + esc(order.customer.email) : ''}</p>
       <p><b>Address:</b> ${esc(a.line)}${a.landmark ? ', ' + esc(a.landmark) : ''}, ${esc(a.city)} - ${esc(a.pincode)}${a.notes ? '<br>Note: ' + esc(a.notes) : ''}</p>
       <p><b>Payment:</b> ${order.payment_method === 'razorpay' ? (order.payment_status === 'paid' ? 'Prepaid (Paid)' : 'Prepaid — PAYMENT PENDING (confirm on Razorpay before dispatch)') : 'Try & Buy (pay at door)'}</p>
       <p><b>Total: ₹${order.total}</b></p>
@@ -69,6 +70,9 @@ export async function POST(req) {
   if (!PHONE.test(phone)) return NextResponse.json({ error: 'Enter a valid 10-digit mobile number' }, { status: 400 });
   if (line.length < 6 || line.length > 240) return NextResponse.json({ error: 'Enter your delivery address' }, { status: 400 });
   if (!PIN.test(pincode)) return NextResponse.json({ error: 'Enter a valid 6-digit pincode' }, { status: 400 });
+  // Optional — used only for the "delivered / thank you" email.
+  const email = String(customer?.email || '').trim().toLowerCase().slice(0, 120);
+  if (email && !EMAIL_RE.test(email)) return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
   const method = payment_method === 'razorpay' ? 'razorpay' : 'tryandbuy';
 
   // ── trusted pricing (server) ──
@@ -91,7 +95,7 @@ export async function POST(req) {
   const row = {
     code,
     user_id: userId,
-    customer: { name, phone },
+    customer: email ? { name, phone, email } : { name, phone },
     address: {
       line,
       landmark: (address?.landmark || '').trim().slice(0, 120) || null,

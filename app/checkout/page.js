@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ShieldCheck, Wallet, Truck, Loader2, Check, AlertCircle, User, Phone, MapPin, Hash, Lock, Tag } from 'lucide-react';
+import { ShieldCheck, Wallet, Truck, Loader2, Check, AlertCircle, User, Phone, MapPin, Hash, Lock, Tag, Mail } from 'lucide-react';
 import { useCart } from '@/lib/cart';
 import { placeOrder, markPaidLocal } from '@/lib/data';
 import { getCurrentUser } from '@/lib/user-auth';
@@ -27,7 +27,9 @@ function loadRazorpay() {
   });
 }
 
-const empty = { name: '', phone: '', address: '', landmark: '', pincode: '', notes: '' };
+const empty = { name: '', phone: '', email: '', address: '', landmark: '', pincode: '', notes: '' };
+// Phone logins get a placeholder like 98xxxxxxxx@onet.local — never show that as their email.
+const realEmail = (e) => (e && !/@(onet|demo)\.local$/i.test(e) ? e : '');
 
 // Field validation rules — each returns an error string or '' when valid.
 const RULES = {
@@ -35,8 +37,9 @@ const RULES = {
   phone: (v) => (!v.trim() ? 'Please enter your mobile number' : !/^[6-9]\d{9}$/.test(v.trim()) ? 'Enter a valid 10-digit mobile number' : ''),
   pincode: (v) => (!v.trim() ? 'Please enter your pincode' : !/^\d{6}$/.test(v.trim()) ? 'Enter a valid 6-digit pincode' : ''),
   address: (v) => (!v.trim() ? 'Please enter your full delivery address' : v.trim().length < 10 ? 'Address looks too short — add house, street & area' : ''),
+  email: (v) => (v.trim() && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v.trim()) ? 'Enter a valid email, or leave it empty' : ''),
 };
-const FIELD_ORDER = ['name', 'phone', 'pincode', 'address'];
+const FIELD_ORDER = ['name', 'phone', 'pincode', 'email', 'address'];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -83,7 +86,9 @@ export default function CheckoutPage() {
     const check = async () => {
       const u = await getCurrentUser();
       if (!u) { setAuthChecked(false); openAuth('/checkout'); return; }
-      setForm((f) => ({ ...f, name: f.name || u.name || '', phone: f.phone || u.phone || '' }));
+      let savedEmail = '';
+      try { savedEmail = localStorage.getItem('onet_email') || ''; } catch {}
+      setForm((f) => ({ ...f, name: f.name || u.name || '', phone: f.phone || u.phone || '', email: f.email || realEmail(u.email) || savedEmail }));
       try { setSavedAddrs(await listAddresses()); } catch {}
       setAuthChecked(true);
     };
@@ -153,7 +158,7 @@ export default function CheckoutPage() {
 
   const buildPayload = () => ({
     items: items.map((i) => ({ id: i.id, size: i.size, color: i.color, qty: i.qty })),
-    customer: { name: form.name.trim(), phone: form.phone.trim() },
+    customer: { name: form.name.trim(), phone: form.phone.trim(), email: form.email.trim() || undefined },
     address: {
       line: form.address.trim(),
       landmark: form.landmark.trim(),
@@ -187,7 +192,7 @@ export default function CheckoutPage() {
   const submit = async () => {
     const er = validateAll();
     setErrors(er);
-    setTouched({ name: true, phone: true, pincode: true, address: true });
+    setTouched({ name: true, phone: true, pincode: true, email: true, address: true });
     if (Object.keys(er).length) {
       showError('Please fill the highlighted fields to continue');
       const first = FIELD_ORDER.find((k) => er[k]);
@@ -199,6 +204,7 @@ export default function CheckoutPage() {
       return;
     }
     setErr(''); setBusy(true);
+    try { if (form.email.trim()) localStorage.setItem('onet_email', form.email.trim()); } catch {}
     try {
       if (method === 'razorpay') await loadRazorpay();
       const data = await placeOrder(buildPayload());
@@ -289,6 +295,9 @@ export default function CheckoutPage() {
                 <Field name="pincode" label="Pincode" required icon={Hash} value={form.pincode}
                   onChange={set('pincode')} onBlur={blur('pincode')} error={errors.pincode}
                   placeholder="474001" inputMode="numeric" />
+                <Field name="email" label="Email" optional icon={Mail} value={form.email} type="email" autoComplete="email"
+                  onChange={set('email')} onBlur={blur('email')} error={errors.email}
+                  placeholder="you@example.com" hint="We'll email your receipt once it's delivered" full />
                 <Field name="address" label="Address (house, street, area)" required icon={MapPin} value={form.address}
                   onChange={set('address')} onBlur={blur('address')} error={errors.address}
                   placeholder="House / flat no., street, locality" full textarea />

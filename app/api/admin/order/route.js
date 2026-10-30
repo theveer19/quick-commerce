@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
+import { sendMail, deliveredEmail, EMAIL_RE } from '@/lib/mailer';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -58,6 +59,13 @@ export async function POST(req) {
       }
       next.phone = phone;
     }
+    if (customer.email !== undefined) {
+      const email = String(customer.email || '').trim().toLowerCase();
+      if (email && !EMAIL_RE.test(email)) {
+        return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
+      }
+      next.email = email || null;
+    }
     if (Object.keys(next).length) {
       const { data: row } = await admin.from('orders').select('customer').eq('code', code).maybeSingle();
       if (!row) return NextResponse.json({ error: 'Order not found' }, { status: 404 });
@@ -74,7 +82,13 @@ export async function POST(req) {
   if (error) return NextResponse.json({ error: 'Could not update order' }, { status: 500 });
 
   if (data && typeof status === 'string' && before?.status !== status) {
-    await withTimeout(notifyOrderStatus(admin, data, status), 5000);
+    // App push for every step; the "thank you" email only once, on delivery,
+    // and only if the customer gave an email at checkout.
+    const mail = status === 'delivered' && data.customer?.email ? deliveredEmail(data) : null;
+    await Promise.allSettled([
+      withTimeout(notifyOrderStatus(admin, data, status), 5000),
+      mail ? withTimeout(sendMail({ to: data.customer.email, ...mail, tag: 'delivered-email' }), 6000) : null,
+    ]);
   }
   return NextResponse.json(data || { ok: true });
 }
