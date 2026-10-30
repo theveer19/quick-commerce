@@ -1,7 +1,8 @@
 'use client';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import ProductGrid from '@/components/ProductGrid';
+import ProductGrid, { applyFilters } from '@/components/ProductGrid';
+import ProductFilters, { EMPTY, SORTS } from '@/components/ProductFilters';
 import { CATEGORIES } from '@/lib/seed';
 import { fetchSubcategories } from '@/lib/data';
 import { cx } from '@/lib/format';
@@ -18,6 +19,14 @@ function ProductsInner() {
   // so whatever you type in admin (Pant, Top, Coord, Leggings, Maxi…) shows up
   // and filters correctly. No fixed list to maintain.
   const [subs, setSubs] = useState([]);
+  const [rows, setRows] = useState(null);
+  const [filters, setFilters] = useState(EMPTY);
+  const initialSort = params.get('sort');
+  const [sort, setSort] = useState(SORTS.some(([v]) => v === initialSort) ? initialSort : 'new');
+
+  // new category / search → start with clean filters
+  useEffect(() => { setFilters(EMPTY); }, [category, sub, search]);
+  const shownCount = rows ? applyFilters(rows, filters, sort).length : null;
   useEffect(() => {
     let alive = true;
     if (!category) { setSubs([]); return; }
@@ -80,8 +89,15 @@ function ProductsInner() {
         </div>
       )}
 
-      <div className="mt-8">
-        <ProductGrid category={category} sub={sub} search={search} />
+      <div className="mt-5 border-t border-line pt-5">
+        <ProductFilters rows={rows} value={filters} onChange={setFilters} sort={sort} onSort={setSort} />
+      </div>
+      {shownCount !== null && (
+        <p className="mt-4 text-sm text-muted">{shownCount} product{shownCount === 1 ? '' : 's'}</p>
+      )}
+
+      <div className="mt-4">
+        <ProductGrid category={category} sub={sub} search={search} filters={filters} sort={sort} onRows={setRows} onClear={() => setFilters(EMPTY)} />
       </div>
     </div>
   );

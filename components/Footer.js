@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Instagram, MessageCircle, MapPin } from 'lucide-react';
+import { Instagram, Linkedin, MessageCircle, MapPin, Phone } from 'lucide-react';
 import { BRAND } from '@/lib/config';
 import AppDownloadBand from './AppDownloadBand';
 
@@ -55,9 +55,19 @@ export default function Footer() {
             <div className="mt-4 flex items-center gap-2 text-sm text-muted">
               <MapPin size={16} className="text-[#8C1C13]" /> {BRAND.address}
             </div>
-            <div className="mt-4 flex gap-3">
-              <a href="#" aria-label="Instagram" className="p-2.5 rounded-full border border-line hover:border-[#8C1C13] hover:text-[#8C1C13] transition-colors"><Instagram size={18} /></a>
-              <a href="#" aria-label="WhatsApp" className="p-2.5 rounded-full border border-line hover:border-mint hover:text-mint transition-colors"><MessageCircle size={18} /></a>
+            <div className="mt-4 flex flex-wrap gap-2.5">
+              {BRAND.instagram && (
+                <a href={`https://instagram.com/${BRAND.instagram}`} target="_blank" rel="noopener noreferrer" aria-label="OneT India on Instagram"
+                  className="p-2.5 rounded-full border border-line hover:border-[#8C1C13] hover:text-[#8C1C13] transition-colors"><Instagram size={18} /></a>
+              )}
+              {BRAND.linkedin && (
+                <a href={BRAND.linkedin} target="_blank" rel="noopener noreferrer" aria-label="OneT India on LinkedIn"
+                  className="p-2.5 rounded-full border border-line hover:border-[#0A66C2] hover:text-[#0A66C2] transition-colors"><Linkedin size={18} /></a>
+              )}
+              <a href={`https://wa.me/${BRAND.whatsapp}`} target="_blank" rel="noopener noreferrer" aria-label="Chat on WhatsApp"
+                className="inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-sm font-medium hover:border-mint hover:text-mint transition-colors"><MessageCircle size={17} /> WhatsApp us</a>
+              <a href={`tel:${BRAND.phoneTel}`} aria-label="Call us"
+                className="inline-flex items-center gap-2 rounded-full border border-line px-3.5 py-2 text-sm font-medium hover:border-rose hover:text-rose transition-colors"><Phone size={16} /> Call</a>
             </div>
           </div>
           {groups.map((g) => (

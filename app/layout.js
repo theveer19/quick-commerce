@@ -4,9 +4,11 @@ import Footer from '@/components/Footer';
 import AuthModal from '@/components/AuthModal';
 import FbPixel from '@/components/FbPixel';
 import AppPromo from '@/components/AppPromo';
-import { BRAND } from '@/lib/config';
+import WhatsAppButton from '@/components/WhatsAppButton';
+import { BRAND, SITE_URL } from '@/lib/config';
 
 export const metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: `${BRAND.name} — Fashion delivered in minutes | Gwalior`,
     template: `%s · ${BRAND.name}`,
@@ -42,6 +44,7 @@ export default function RootLayout({ children }) {
         <Footer />
         <AuthModal />
         <AppPromo />
+        <WhatsAppButton />
       </body>
     </html>
   );

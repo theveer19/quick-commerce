@@ -63,9 +63,11 @@ export default function ProductCard({ p, index = 0 }) {
             <span className="font-display font-bold text-ivory">{inr(p.price)}</span>
             {off > 0 && <span className="text-xs text-muted line-through">{inr(p.mrp)}</span>}
           </div>
-          {p.rating && (
+          {/* only real customer ratings — nothing shown until someone reviews */}
+          {Number(p.rating_count) > 0 && (
             <div className="mt-1 flex items-center gap-1 text-xs text-muted">
-              <Star size={12} className="fill-mint text-mint" /> {p.rating}
+              <Star size={12} className="fill-mint text-mint" /> {Number(p.rating_avg).toFixed(1)}
+              <span className="text-muted/70">({p.rating_count})</span>
             </div>
           )}
         </div>

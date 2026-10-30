@@ -5,7 +5,8 @@ import { priceOrder } from '@/lib/pricing';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
 import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
-import { EMAIL_RE } from '@/lib/mailer';
+import { EMAIL_RE, sendMail, esc as escHtml } from '@/lib/mailer';
+import { isServiceablePin, NOT_SERVICEABLE_MSG, SITE_URL } from '@/lib/config';
 
 // Order email to the store owner (via Resend).
 // Set RESEND_API_KEY + ORDER_NOTIFY_EMAIL in env to enable. No-op if unset.
@@ -36,6 +37,25 @@ async function notifyOrderEmail(order) {
     // put that in the Vercel logs instead of swallowing it.
     if (!r.ok) console.error('[order-email] Resend refused', r.status, await r.text().catch(() => ''));
   } catch (e) { console.error('[order-email] failed', e?.message); /* never block the order */ }
+}
+
+// Customers never see stock counts, so the owner gets an email the moment an
+// order leaves a product at LOW_STOCK pieces or fewer.
+const LOW_STOCK = Number(process.env.LOW_STOCK_ALERT || 2);
+async function lowStockAlert(admin, lines) {
+  try {
+    const ids = [...new Set(lines.map((l) => l.id))];
+    if (!ids.length) return;
+    const { data } = await admin.from('products').select('id,name,stock').in('id', ids).lte('stock', LOW_STOCK);
+    if (!data?.length) return;
+    const rows = data.map((p) => `<li><b>${escHtml(p.name)}</b> — ${Number(p.stock) <= 0 ? '<span style="color:#DC2626">OUT OF STOCK</span>' : `only ${Number(p.stock)} left`}</li>`).join('');
+    await sendMail({
+      to: process.env.ORDER_NOTIFY_EMAIL || 'onetvision01@gmail.com',
+      subject: `⚠️ Low stock: ${data.map((p) => p.name).slice(0, 2).join(', ')}${data.length > 2 ? ` +${data.length - 2} more` : ''}`,
+      html: `<h2>Restock soon</h2><ul>${rows}</ul><p><a href="${SITE_URL}/admin/inventory">Open inventory →</a></p>`,
+      tag: 'low-stock',
+    });
+  } catch (e) { console.error('[low-stock] failed', e?.message); }
 }
 
 export const runtime = 'nodejs';
@@ -70,6 +90,7 @@ export async function POST(req) {
   if (!PHONE.test(phone)) return NextResponse.json({ error: 'Enter a valid 10-digit mobile number' }, { status: 400 });
   if (line.length < 6 || line.length > 240) return NextResponse.json({ error: 'Enter your delivery address' }, { status: 400 });
   if (!PIN.test(pincode)) return NextResponse.json({ error: 'Enter a valid 6-digit pincode' }, { status: 400 });
+  if (!isServiceablePin(pincode)) return NextResponse.json({ error: NOT_SERVICEABLE_MSG }, { status: 400 });
   // Optional — used only for the "delivered / thank you" email.
   const email = String(customer?.email || '').trim().toLowerCase().slice(0, 120);
   if (email && !EMAIL_RE.test(email)) return NextResponse.json({ error: 'Enter a valid email address' }, { status: 400 });
@@ -179,6 +200,7 @@ export async function POST(req) {
     // A prepaid order gets its customer push once the payment is confirmed.
     await Promise.allSettled([
       withTimeout(notifyOrderEmail(row), 6000),
+      reserved.length ? withTimeout(lowStockAlert(admin, reserved), 6000) : null,
       method === 'razorpay' ? null : withTimeout(notifyOrderStatus(admin, row, 'placed'), 5000),
     ]);
     return NextResponse.json({ code, total: priced.total, persisted: true, razorpay });

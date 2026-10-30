@@ -11,6 +11,9 @@ import { inr, cx } from '@/lib/format';
 import { BRAND } from '@/lib/config';
 import { fbTrack } from '@/lib/fbpixel';
 import { outOfStock, maxQty } from '@/lib/stock';
+import PincodeCheck from '@/components/PincodeCheck';
+import SizeGuide from '@/components/SizeGuide';
+import ProductReviews from '@/components/ProductReviews';
 
 const MAROON = '#8C1C13';
 
@@ -89,9 +92,15 @@ export default function ProductPage() {
         <div>
           {/* rating + stock pills */}
           <div className="flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1">
-              <Star size={12} className="fill-emerald-600 text-emerald-600" /> {p.rating || '4.5'}
-            </span>
+            {/* real customer ratings only — hidden until someone reviews */}
+            {Number(p.rating_count) > 0 ? (
+              <a href="#reviews" className="inline-flex items-center gap-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold px-2 py-1 hover:bg-emerald-100">
+                <Star size={12} className="fill-emerald-600 text-emerald-600" /> {Number(p.rating_avg).toFixed(1)}
+                <span className="font-medium text-emerald-700/80">· {p.rating_count} rating{Number(p.rating_count) === 1 ? '' : 's'}</span>
+              </a>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md bg-lilacbg text-plum text-xs font-bold px-2 py-1">New arrival</span>
+            )}
             {out && <span className="text-xs font-bold px-2 py-0.5 rounded-full text-red-600 bg-red-50">Out of stock</span>}
           </div>
 
@@ -107,13 +116,7 @@ export default function ProductPage() {
           <p className="mt-0.5 text-xs text-muted">Inclusive of all taxes</p>
 
           {/* delivery to */}
-          <div className="mt-5 flex items-center gap-3 rounded-xl border border-line bg-surface px-4 py-3">
-            <span className="grid place-items-center w-9 h-9 rounded-full shrink-0" style={{ backgroundColor: `${MAROON}14`, color: MAROON }}><MapPin size={17} /></span>
-            <div className="text-sm leading-tight">
-              <p className="text-ivory font-semibold">Deliver to {loc}</p>
-              <p className="text-muted text-xs flex items-center gap-1"><Clock size={12} /> Delivered in minutes · {BRAND.workingHours}</p>
-            </div>
-          </div>
+          <PincodeCheck accent={MAROON} />
 
           {/* offers */}
           <div className="mt-3 rounded-xl border border-dashed px-4 py-3 space-y-2" style={{ borderColor: `${MAROON}55`, backgroundColor: `${MAROON}08` }}>
@@ -145,7 +148,7 @@ export default function ProductPage() {
             <div className="mt-6">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-semibold text-ivory">Select size</span>
-                <span className="text-xs font-semibold" style={{ color: MAROON }}>Size guide</span>
+                <SizeGuide sizes={p.sizes} accent={MAROON} />
               </div>
               <div className="flex flex-wrap gap-2">
                 {p.sizes.map((s) => {
@@ -214,6 +217,8 @@ export default function ProductPage() {
               ))}
             </div>
           </div>
+
+          <ProductReviews productId={p.id} accent={MAROON} />
         </div>
       </div>
 

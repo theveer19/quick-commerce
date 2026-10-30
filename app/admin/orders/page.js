@@ -5,13 +5,45 @@ function fmtDT(v) {
   if (isNaN(d)) return '';
   return d.toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
 }
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Phone, MapPin, Truck, Check, FileText } from 'lucide-react';
+import { X, Phone, MapPin, Truck, Check, FileText, Search } from 'lucide-react';
 import { adminListOrders, updateOrderStatus, updateOrderPartner, updateOrderCustomer, reconcilePayments, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
 import { inr, cx } from '@/lib/format';
 
 const STATUS_OPTIONS = [...ORDER_STAGES, 'cancelled'];
+
+// Everything an admin might type to find an order: code (or just its tail),
+// name, phone (any part), email, pincode, area, item name, size/colour, partner.
+function haystack(o) {
+  const a = o.address || {};
+  return [
+    o.code, o.customer?.name, o.customer?.phone, o.customer?.email,
+    a.line, a.landmark, a.pincode, a.city, a.notes,
+    o.delivery_partner?.name, o.delivery_partner?.phone, o.coupon,
+    ...(o.items || []).flatMap((i) => [i.name, i.size, i.color]),
+  ].filter(Boolean).join(' ').toLowerCase();
+}
+function matches(o, q) {
+  const terms = q.toLowerCase().trim().split(/\s+/).filter(Boolean);
+  if (!terms.length) return true;
+  const h = haystack(o);
+  const digits = h.replace(/\D/g, '');
+  return terms.every((t) => h.includes(t) || (/^\d{3,}$/.test(t) && digits.includes(t)));
+}
+const DATE_FILTERS = [['any', 'Any time'], ['today', 'Today'], ['yesterday', 'Yesterday'], ['7d', 'Last 7 days'], ['30d', 'Last 30 days']];
+function inDate(o, f) {
+  if (f === 'any') return true;
+  const t = new Date(o.created_at).getTime();
+  if (!t) return false;
+  const start = new Date(); start.setHours(0, 0, 0, 0);
+  const day = 864e5;
+  if (f === 'today') return t >= start.getTime();
+  if (f === 'yesterday') return t >= start.getTime() - day && t < start.getTime();
+  if (f === '7d') return t >= start.getTime() - 6 * day;
+  if (f === '30d') return t >= start.getTime() - 29 * day;
+  return true;
+}
 
 const badgeColor = (s) =>
   s === 'delivered' ? 'bg-mint/20 text-mint'
@@ -23,6 +55,20 @@ export default function AdminOrders() {
   const [list, setList] = useState(null);
   const [detail, setDetail] = useState(null);
   const [filter, setFilter] = useState('all');
+  const [query, setQuery] = useState('');
+  const [when, setWhen] = useState('any');
+  const searchRef = useRef(null);
+
+  // "/" jumps to the search box, Esc clears it
+  useEffect(() => {
+    const onKey = (e) => {
+      const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement?.tagName);
+      if (e.key === '/' && !typing) { e.preventDefault(); searchRef.current?.focus(); }
+      if (e.key === 'Escape' && document.activeElement === searchRef.current) { setQuery(''); searchRef.current?.blur(); }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   const load = () => adminListOrders().then(setList);
   useEffect(() => { load(); }, []);
@@ -76,7 +122,17 @@ export default function AdminOrders() {
     notify('Customer details updated');
   };
 
-  const shown = (list || []).filter((o) => filter === 'all' ? true : filter === 'active' ? (o.status !== 'delivered' && o.status !== 'cancelled') : o.status === filter);
+  const byStatus = (o, f) => (f === 'all' ? true : f === 'active' ? (o.status !== 'delivered' && o.status !== 'cancelled') : o.status === f);
+  // search + date first, so the status chips can show how many of the matches are in each
+  const searched = useMemo(() => (list || []).filter((o) => inDate(o, when) && matches(o, query)), [list, when, query]);
+  const counts = useMemo(() => {
+    const c = {};
+    for (const f of ['all', 'active', ...STATUS_OPTIONS]) c[f] = searched.filter((o) => byStatus(o, f)).length;
+    return c;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searched]);
+  const shown = searched.filter((o) => byStatus(o, filter));
+  const shownTotal = shown.filter((o) => o.status !== 'cancelled').reduce((a, o) => a + (Number(o.total) || 0), 0);
 
   return (
     <>
@@ -100,19 +156,56 @@ export default function AdminOrders() {
         </button>
       </div>
 
-      <div className="mt-6 flex gap-2 overflow-x-auto no-scrollbar pb-1">
+      {/* search */}
+      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <label className="relative flex-1">
+          <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            ref={searchRef} value={query} onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search order code, name, phone, pincode, item…"
+            className="h-11 w-full rounded-xl border border-line bg-surface pl-10 pr-20 text-sm text-ivory outline-none focus:border-rose focus:ring-4 focus:ring-rose/10"
+          />
+          {query ? (
+            <button onClick={() => setQuery('')} aria-label="Clear search"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full text-muted hover:bg-lilacbg hover:text-ivory"><X size={15} /></button>
+          ) : (
+            <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-line bg-ink px-1.5 py-0.5 text-[11px] text-muted sm:block">/</kbd>
+          )}
+        </label>
+        <select value={when} onChange={(e) => setWhen(e.target.value)}
+          className="h-11 rounded-xl border border-line bg-surface px-3 text-sm text-ivory outline-none focus:border-rose sm:w-44">
+          {DATE_FILTERS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+        </select>
+      </div>
+
+      <div className="mt-3 flex gap-2 overflow-x-auto no-scrollbar pb-1">
         {['all', 'active', ...STATUS_OPTIONS].map((f) => (
           <button key={f} onClick={() => setFilter(f)}
-            className={cx('shrink-0 rounded-full px-4 py-1.5 text-sm border capitalize',
+            className={cx('shrink-0 inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm border capitalize',
               filter === f ? 'bg-rose text-white border-rose' : 'border-line text-muted hover:text-ivory')}>
             {f === 'all' ? 'All' : f === 'active' ? 'Active' : STAGE_LABEL[f] || f}
+            {list && <span className={cx('rounded-full px-1.5 text-[11px] font-semibold', filter === f ? 'bg-white/20' : 'bg-lilacbg text-ivory/70')}>{counts[f] ?? 0}</span>}
           </button>
         ))}
       </div>
 
+      {list && (query || when !== 'any' || filter !== 'all') && (
+        <p className="mt-2 text-xs text-muted">
+          {shown.length} order{shown.length === 1 ? '' : 's'}{shownTotal ? ` · ${inr(shownTotal)} (excl. cancelled)` : ''}
+          {(query || when !== 'any' || filter !== 'all') && (
+            <button onClick={() => { setQuery(''); setWhen('any'); setFilter('all'); }} className="ml-2 font-semibold text-grape hover:underline">Clear all</button>
+          )}
+        </p>
+      )}
+
       <div className="mt-4 rounded-xl2 border border-line bg-surface overflow-hidden">
         {!list ? <p className="p-6 text-muted text-sm">Loading…</p> :
-          shown.length === 0 ? <p className="p-8 text-center text-muted text-sm">No orders here.</p> : (
+          shown.length === 0 ? (
+            <div className="p-10 text-center">
+              <p className="text-sm font-medium text-ivory">{query ? `No orders match "${query}"` : 'No orders here.'}</p>
+              {query && <p className="mt-1 text-xs text-muted">Try the last 4 digits of the phone or the order code.</p>}
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[720px]">
               <thead className="text-muted border-b border-line">
@@ -263,6 +356,7 @@ function CustomerEditor({ detail, onSave }) {
           <button onClick={() => setEditing(true)} className="shrink-0 text-xs text-grape hover:underline">Edit</button>
         </div>
         <p className="text-sm text-muted mt-1 flex items-center gap-2"><Phone size={14} /> {detail.customer?.phone}</p>
+        {detail.customer?.email && <p className="text-sm text-muted mt-1 break-all">✉️ {detail.customer.email}</p>}
       </>
     );
   }

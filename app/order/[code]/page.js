@@ -8,34 +8,31 @@ import { fetchOrder, ORDER_STAGES, STAGE_LABEL } from '@/lib/data';
 import MapTracker from '@/components/MapTracker';
 import { inr } from '@/lib/format';
 import { BRAND } from '@/lib/config';
+import CancelOrder from '@/components/CancelOrder';
+import OrderReview from '@/components/OrderReview';
 
 const MAROON = '#8C1C13';
 
-// Live ETA: counts down from (order time + promised minutes). Never sticks at
-// a flat "~30 min" — once the window passes it shows "Arriving soon".
+// We promise "in minutes", never a fixed number — weather and traffic decide.
 function etaInfo(order) {
   if (order.status === 'delivered') return { label: 'Status', value: 'Delivered', chip: 'Delivered', done: true };
   if (order.status === 'cancelled') return { label: 'Status', value: 'Cancelled', chip: 'Cancelled', done: true };
-  const created = new Date(order.created_at).getTime();
-  if (!created || isNaN(created)) return { label: 'Arriving in', value: `~${BRAND.etaMinutes} min`, chip: `Arriving in ~${BRAND.etaMinutes} min` };
-  const remainMin = Math.round((created + BRAND.etaMinutes * 60000 - Date.now()) / 60000);
-  if (remainMin >= 1) return { label: 'Arriving in', value: `~${remainMin} min`, chip: `Arriving in ~${remainMin} min` };
-  return { label: 'Arriving', value: 'Soon', chip: 'Arriving soon' };
+  if (order.status === 'out_for_delivery') return { label: 'Arriving', value: 'Very soon', chip: 'On the way — arriving in minutes' };
+  return { label: 'Arriving', value: 'In minutes', chip: 'Arriving in minutes' };
 }
 
 export default function OrderPage() {
   const { code } = useParams();
   const [order, setOrder] = useState(undefined);
-  const [, setTick] = useState(0);
+  const [reload, setReload] = useState(0);
 
   useEffect(() => {
     let alive = true;
     const load = () => fetchOrder(code).then((o) => { if (alive) setOrder(o); });
     load();
     const t = setInterval(load, 6000); // live refresh
-    const c = setInterval(() => setTick((n) => n + 1), 30000); // ETA countdown re-render
-    return () => { alive = false; clearInterval(t); clearInterval(c); };
-  }, [code]);
+    return () => { alive = false; clearInterval(t); };
+  }, [code, reload]);
 
   if (order === undefined) return <div className="mx-auto max-w-3xl px-4 py-20 text-muted">Loading…</div>;
   if (order === null) return (
@@ -84,7 +81,10 @@ export default function OrderPage() {
         {/* timeline */}
         <div className="mt-8">
           {order.status === 'cancelled' ? (
-            <p className="font-medium" style={{ color: MAROON }}>This order was cancelled.</p>
+            <div className="rounded-xl bg-red-50 px-4 py-3">
+              <p className="font-semibold text-red-700">This order was cancelled.</p>
+              <p className="mt-0.5 text-sm text-red-700/80">{order.payment_method === 'razorpay' && String(order.payment_status || '').startsWith('paid') ? 'Your refund is processed by our team — usually the same day.' : 'Nothing to pay. We hope to see you again soon!'}</p>
+            </div>
           ) : (
             <div className="space-y-0">
               {ORDER_STAGES.map((s, i) => {
@@ -116,6 +116,17 @@ export default function OrderPage() {
           )}
         </div>
       </div>
+
+      {/* cancel — only the customer who placed it, and only before packing */}
+      {order.is_owner && ['placed', 'confirmed'].includes(order.status) && (
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-white px-5 py-4 shadow-soft">
+          <p className="text-sm text-muted">Changed your mind? You can cancel until we pack your order.</p>
+          <CancelOrder order={order} accent={MAROON} onCancelled={() => setReload((n) => n + 1)} />
+        </div>
+      )}
+
+      {/* rate items once delivered */}
+      {order.is_owner && order.status === 'delivered' && <OrderReview order={order} accent={MAROON} />}
 
       {/* details */}
       <div className="mt-6 grid gap-4 sm:grid-cols-2">

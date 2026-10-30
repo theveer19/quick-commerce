@@ -81,6 +81,14 @@ export async function POST(req) {
   const { data, error } = await admin.from('orders').update(patch).eq('code', String(code).slice(0, 40)).select().maybeSingle();
   if (error) return NextResponse.json({ error: 'Could not update order' }, { status: 500 });
 
+  // Cancelled by the shop → put the pieces back on the shelf (once).
+  if (data && status === 'cancelled' && before?.status && before.status !== 'cancelled') {
+    for (const it of data.items || []) {
+      const qty = Math.max(0, Math.floor(Number(it.qty) || 0));
+      if (it.id && qty) { try { await admin.rpc('increment_stock', { p_id: it.id, p_qty: qty }); } catch {} }
+    }
+  }
+
   if (data && typeof status === 'string' && before?.status !== status) {
     // App push for every step; the "thank you" email only once, on delivery,
     // and only if the customer gave an email at checkout.

@@ -9,7 +9,7 @@ import { getCurrentUser } from '@/lib/user-auth';
 import { listAddresses } from '@/lib/addresses';
 import { useAuthModal } from '@/lib/auth-modal';
 import { inr, orderCode, cx } from '@/lib/format';
-import { BRAND, RAZORPAY_KEY_ID, isOpenNow } from '@/lib/config';
+import { BRAND, RAZORPAY_KEY_ID, isOpenNow, isServiceablePin, NOT_SERVICEABLE_MSG } from '@/lib/config';
 import { fbTrack } from '@/lib/fbpixel';
 
 const MAROON = '#8C1C13';
@@ -35,7 +35,7 @@ const realEmail = (e) => (e && !/@(onet|demo)\.local$/i.test(e) ? e : '');
 const RULES = {
   name: (v) => (!v.trim() ? 'Please enter your full name' : ''),
   phone: (v) => (!v.trim() ? 'Please enter your mobile number' : !/^[6-9]\d{9}$/.test(v.trim()) ? 'Enter a valid 10-digit mobile number' : ''),
-  pincode: (v) => (!v.trim() ? 'Please enter your pincode' : !/^\d{6}$/.test(v.trim()) ? 'Enter a valid 6-digit pincode' : ''),
+  pincode: (v) => (!v.trim() ? 'Please enter your pincode' : !/^\d{6}$/.test(v.trim()) ? 'Enter a valid 6-digit pincode' : !isServiceablePin(v) ? NOT_SERVICEABLE_MSG : ''),
   address: (v) => (!v.trim() ? 'Please enter your full delivery address' : v.trim().length < 10 ? 'Address looks too short — add house, street & area' : ''),
   email: (v) => (v.trim() && !/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(v.trim()) ? 'Enter a valid email, or leave it empty' : ''),
 };

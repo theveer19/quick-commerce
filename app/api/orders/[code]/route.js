@@ -44,6 +44,7 @@ export async function GET(req, { params }) {
   return NextResponse.json({
     ...rest,
     address: addr,
+    is_owner: Boolean(isOwner),
     customer: {
       name: customer?.name || '',
       phone: isOwner ? phone : (phone ? `••••••${phone.slice(-4)}` : ''),
