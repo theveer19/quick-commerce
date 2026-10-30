@@ -24,7 +24,7 @@ export default function AppDownloadBand() {
         <div className="relative grid items-center gap-10 px-6 py-10 sm:px-10 md:grid-cols-[1.25fr_1fr] md:py-14 lg:px-14">
           {/* ── copy ── */}
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] ring-1 ring-white/20">
+            <span className="inline-flex items-center gap-2 rounded-full bg-white/[0.12] px-3 py-1.5 text-[11px] font-bold uppercase tracking-[0.14em] ring-1 ring-white/20">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-mint opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-mint" />
@@ -42,7 +42,7 @@ export default function AppDownloadBand() {
             <ul className="mt-7 grid gap-x-6 gap-y-4 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
               {PERKS.map(({ icon: Icon, title, text }) => (
                 <li key={title} className="flex gap-3">
-                  <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/12 ring-1 ring-white/15">
+                  <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.12] ring-1 ring-white/15">
                     <Icon size={17} />
                   </span>
                   <span>
