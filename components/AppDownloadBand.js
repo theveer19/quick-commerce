@@ -3,7 +3,7 @@
 // Right: a phone drawn in CSS showing the app with a live order notification.
 import { Bell, MapPin, Zap, Gift, Star } from 'lucide-react';
 import PlayBadge from './PlayBadge';
-import { PLAY_STORE_URL } from '@/lib/config';
+import { PLAY_STORE_URL, APP_OFFER } from '@/lib/config';
 
 const PERKS = [
   { icon: MapPin, title: 'Live order tracking', text: 'See your rider on the way, step by step.' },
@@ -38,6 +38,13 @@ export default function AppDownloadBand() {
             <p className="mt-3 max-w-lg text-[15px] leading-relaxed text-white/80">
               Get the OneT India app for the fastest way to shop Gwalior&apos;s latest styles — try at your door, keep what you love.
             </p>
+
+            <div className="mt-5 inline-flex items-center gap-3 rounded-2xl border border-dashed border-white/40 bg-white/10 py-2 pl-2 pr-4">
+              <span className="rounded-xl bg-gold px-2.5 py-1.5 font-display text-lg font-extrabold leading-none text-[#2A0870]">₹{APP_OFFER.amount} OFF</span>
+              <span className="text-[13px] leading-snug text-white/85">
+                First app order above ₹{APP_OFFER.min} · code <b className="tracking-wider text-white">{APP_OFFER.code}</b>
+              </span>
+            </div>
 
             <ul className="mt-7 grid gap-x-6 gap-y-4 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
               {PERKS.map(({ icon: Icon, title, text }) => (

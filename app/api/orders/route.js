@@ -4,6 +4,7 @@ import Razorpay from 'razorpay';
 import { priceOrder } from '@/lib/pricing';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
+import { phoneFromRequest } from '@/lib/session';
 import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
 import { EMAIL_RE, sendMail, esc as escHtml } from '@/lib/mailer';
 import { isServiceablePin, NOT_SERVICEABLE_MSG, SITE_URL } from '@/lib/config';
@@ -98,7 +99,7 @@ export async function POST(req) {
 
   // ── trusted pricing (server) ──
   let priced;
-  try { priced = await priceOrder(items, coupon); }
+  try { priced = await priceOrder(items, coupon, { phone: phoneFromRequest(req) || phone, client: req.headers.get('x-onet-client') === 'app' ? 'app' : 'web' }); }
   catch (e) { return NextResponse.json({ error: e.message || 'Could not price your order' }, { status: 400 }); }
 
   // ── identify the user (login-gated checkout) ──

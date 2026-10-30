@@ -4,6 +4,7 @@ import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Zap, Bell, Shirt } from 'lucide-react';
 import PlayBadge from './PlayBadge';
+import { APP_OFFER } from '@/lib/config';
 
 // "Get the app" card shown a few seconds after someone opens the website.
 // Shown once and then quiet for a week after it is closed, never on the admin
@@ -61,6 +62,13 @@ export default function AppPromo() {
                   <p className="font-display text-[17px] font-extrabold text-ivory leading-tight">OneT India app is here</p>
                   <p className="text-xs text-muted mt-0.5">Now on Google Play · Free</p>
                 </div>
+              </div>
+              <div className="mt-3 flex items-center gap-3 rounded-xl border-2 border-dashed px-3 py-2.5" style={{ borderColor: `${MAROON}55`, backgroundColor: `${MAROON}0A` }}>
+                <span className="font-display text-xl font-extrabold leading-none" style={{ color: MAROON }}>₹{APP_OFFER.amount}<span className="block text-[10px] font-bold tracking-wider">OFF</span></span>
+                <span className="text-[12.5px] leading-snug text-ivory">
+                  On your <b>first app order</b> above ₹{APP_OFFER.min}. Use code{' '}
+                  <b className="rounded bg-white px-1.5 py-0.5 tracking-wider ring-1 ring-black/10">{APP_OFFER.code}</b>
+                </span>
               </div>
               <ul className="mt-3 space-y-1.5 text-[13px] text-ivory">
                 <li className="flex items-center gap-2"><Zap size={14} style={{ color: MAROON }} /> Order in 2 taps, delivered in minutes</li>
