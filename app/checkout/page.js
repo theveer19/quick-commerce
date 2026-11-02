@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ShieldCheck, Wallet, Truck, Loader2, Check, AlertCircle, User, Phone, MapPin, Hash, Lock, Tag, Mail } from 'lucide-react';
@@ -11,6 +11,7 @@ import { useAuthModal } from '@/lib/auth-modal';
 import { inr, orderCode, cx } from '@/lib/format';
 import { BRAND, RAZORPAY_KEY_ID, isOpenNow, isServiceablePin, NOT_SERVICEABLE_MSG } from '@/lib/config';
 import { fbTrack } from '@/lib/fbpixel';
+import { COUPON_KEY } from '@/components/CouponCapture';
 
 const MAROON = '#8C1C13';
 const MAROON_DARK = '#6E140D';
@@ -98,6 +99,27 @@ export default function CheckoutPage() {
     return () => window.removeEventListener('onet-auth', onAuth);
   }, [openAuth]);
 
+  // Auto-apply a coupon remembered from an influencer link (?coupon=CODE).
+  // Runs once, after login, when the bag has items.
+  const autoTried = useRef(false);
+  useEffect(() => {
+    if (!authChecked || !items.length || autoTried.current) return;
+    autoTried.current = true;
+    let code = '';
+    try { code = localStorage.getItem(COUPON_KEY) || ''; } catch {}
+    if (!code) return;
+    setCoupon(code);
+    setCouponBusy(true);
+    fetch('/api/coupon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code, subtotal: useCart.getState().subtotal() }) })
+      .then((r) => r.json())
+      .then((j) => {
+        if (j.valid) { setDiscount(j.discount); setAppliedCode(j.code); setCouponMsg(`✓ ${j.message}`); }
+        else setCouponMsg(j.message || 'Invalid coupon');
+      })
+      .catch(() => {})
+      .finally(() => setCouponBusy(false));
+  }, [authChecked, items.length]);
+
   if (!mounted) return <div className="mx-auto max-w-6xl px-4 py-20 text-muted">Loading…</div>;
   if (!authChecked) {
     return (
@@ -134,7 +156,10 @@ export default function CheckoutPage() {
     } catch { setCouponMsg('Could not check coupon'); }
     setCouponBusy(false);
   };
-  const removeCoupon = () => { setCoupon(''); setDiscount(0); setAppliedCode(''); setCouponMsg(''); };
+  const removeCoupon = () => {
+    setCoupon(''); setDiscount(0); setAppliedCode(''); setCouponMsg('');
+    try { localStorage.removeItem(COUPON_KEY); } catch {}
+  };
 
   // controlled change — re-validate live once a field has been touched
   const set = (k) => (e) => {
@@ -180,6 +205,7 @@ export default function CheckoutPage() {
       content_ids: items.map((i) => i.id),
       num_items: items.reduce((a, i) => a + i.qty, 0),
     });
+    if (appliedCode) { try { localStorage.removeItem(COUPON_KEY); } catch {} }
     clear();
     router.push(`/order/${code}`);
   };

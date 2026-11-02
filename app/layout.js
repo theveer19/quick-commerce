@@ -5,6 +5,7 @@ import AuthModal from '@/components/AuthModal';
 import FbPixel from '@/components/FbPixel';
 import AppPromo from '@/components/AppPromo';
 import WhatsAppButton from '@/components/WhatsAppButton';
+import CouponCapture from '@/components/CouponCapture';
 import { BRAND, SITE_URL } from '@/lib/config';
 
 export const metadata = {
@@ -39,6 +40,7 @@ export default function RootLayout({ children }) {
       </head>
       <body className="font-body grain min-h-screen flex flex-col">
         <FbPixel />
+        <CouponCapture />
         <Navbar />
         <main className="flex-1 relative z-[2]">{children}</main>
         <Footer />
