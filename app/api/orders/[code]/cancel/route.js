@@ -3,7 +3,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
 import { phoneFromRequest } from '@/lib/session';
 import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
-import { sendMail, esc } from '@/lib/mailer';
+import { sendMail, esc, ownerEmails } from '@/lib/mailer';
+import { releaseLines } from '@/lib/stock-server';
 import { SITE_URL } from '@/lib/config';
 
 export const runtime = 'nodejs';
@@ -55,13 +56,10 @@ export async function POST(req, { params }) {
   if (!updated) return NextResponse.json({ error: 'The shop just started packing this order. Please call us if you still want to cancel.' }, { status: 409 });
 
   // Put the pieces back on the shelf.
-  for (const it of order.items || []) {
-    const qty = Math.max(0, Math.floor(Number(it.qty) || 0));
-    if (it.id && qty) { try { await admin.rpc('increment_stock', { p_id: it.id, p_qty: qty }); } catch {} }
-  }
+  await releaseLines(admin, order.items);   // back to the exact size
 
   const ownerMail = sendMail({
-    to: process.env.ORDER_NOTIFY_EMAIL || 'onetvision01@gmail.com',
+    to: ownerEmails(),
     subject: `❌ Order ${code} cancelled by customer`,
     html: `<h2>Order ${esc(code)} was cancelled by the customer</h2>
       <p><b>Customer:</b> ${esc(order.customer?.name)} (${esc(order.customer?.phone)})</p>

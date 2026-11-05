@@ -10,7 +10,7 @@ import { useWishlist } from '@/lib/wishlist';
 import { inr, cx } from '@/lib/format';
 import { BRAND } from '@/lib/config';
 import { fbTrack } from '@/lib/fbpixel';
-import { outOfStock, maxQty } from '@/lib/stock';
+import { outOfStock, maxQty, sizeOut, firstAvailableSize } from '@/lib/stock';
 import PincodeCheck from '@/components/PincodeCheck';
 import SizeGuide from '@/components/SizeGuide';
 import ProductReviews from '@/components/ProductReviews';
@@ -45,7 +45,7 @@ export default function ProductPage() {
   useEffect(() => {
     fetchProduct(id).then((prod) => {
       setP(prod);
-      if (prod?.sizes?.length) setSize(prod.sizes[0]);
+      if (prod?.sizes?.length) setSize(firstAvailableSize(prod) ?? prod.sizes[0]);
       if (prod?.colors?.length) setColor((prod.colors[0].name) || prod.colors[0]);
       if (prod) fbTrack('ViewContent', { content_ids: [prod.id], content_name: prod.name, content_type: 'product', value: prod.price, currency: 'INR' });
     });
@@ -61,15 +61,18 @@ export default function ProductPage() {
 
   const off = p.mrp && p.mrp > p.price ? Math.round((1 - p.price / p.mrp) * 100) : 0;
   const out = outOfStock(p);
+  const sizeGone = Boolean(size) && sizeOut(p, size);   // this size sold out
+  const blocked = out || sizeGone;
   const wished = mounted && wishIds.includes(p.id);
+  const pickSize = (s) => { if (sizeOut(p, s)) return; setSize(s); setQty((q) => Math.min(q, maxQty(p, s))); };
 
   const onAdd = () => {
-    if (outOfStock(p)) return;
+    if (blocked) return;
     for (let i = 0; i < qty; i++) add(p, size, color);
     setAdded(true);
     setTimeout(() => setAdded(false), 1400);
   };
-  const onBuy = () => { if (outOfStock(p)) return; for (let i = 0; i < qty; i++) add(p, size, color); router.push('/cart'); };
+  const onBuy = () => { if (blocked) return; for (let i = 0; i < qty; i++) add(p, size, color); router.push('/cart'); };
 
   const specs = [
     ['Category', p.category ? String(p.category).replace(/(^|\s)\S/g, (t) => t.toUpperCase()) : 'Fashion'],
@@ -86,7 +89,7 @@ export default function ProductPage() {
       </button>
       <div className="text-xs text-muted mb-4">Home / Products / <span className="text-ivory">{p.name}</span></div>
 
-      <div className="grid gap-8 lg:gap-12 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-8 lg:gap-12 md:grid-cols-2 [&>*]:min-w-0">
         <Gallery images={(p.images && p.images.length ? p.images : [p.image]).filter(Boolean)} name={p.name} off={off} />
 
         <div>
@@ -153,15 +156,21 @@ export default function ProductPage() {
               <div className="flex flex-wrap gap-2">
                 {p.sizes.map((s) => {
                   const on = size === s;
+                  const gone = sizeOut(p, s);
                   return (
-                    <button key={s} onClick={() => setSize(s)}
-                      className="min-w-[3rem] rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors"
-                      style={on ? { borderColor: MAROON, backgroundColor: `${MAROON}12`, color: MAROON } : { borderColor: '#E7E2F0', color: '#8b83a0' }}>
+                    <button key={s} onClick={() => pickSize(s)} disabled={gone} aria-disabled={gone}
+                      title={gone ? `Size ${s} is sold out` : `Size ${s}`}
+                      className={cx('relative min-w-[3rem] overflow-hidden rounded-lg border px-4 py-2.5 text-sm font-semibold transition-colors', gone && 'cursor-not-allowed bg-cloud')}
+                      style={gone ? { borderColor: '#EEEAF6', color: '#C4BFD3' } : on ? { borderColor: MAROON, backgroundColor: `${MAROON}12`, color: MAROON } : { borderColor: '#E7E2F0', color: '#8b83a0' }}>
                       {s}
+                      {gone && <span aria-hidden className="pointer-events-none absolute left-1/2 top-1/2 h-px w-[130%] -translate-x-1/2 -translate-y-1/2 -rotate-[24deg] bg-[#C4BFD3]" />}
                     </button>
                   );
                 })}
               </div>
+              {!out && p.sizes.some((s) => sizeOut(p, s)) && (
+                <p className="mt-2 text-xs text-muted">Crossed-out sizes are sold out.</p>
+              )}
             </div>
           )}
 
@@ -171,7 +180,7 @@ export default function ProductPage() {
             <div className="inline-flex items-center rounded-full border border-line overflow-hidden">
               <button onClick={() => setQty((q) => Math.max(1, q - 1))} className="w-11 h-11 grid place-items-center text-ivory hover:bg-lilacbg disabled:opacity-30" disabled={qty <= 1}><Minus size={16} /></button>
               <span className="w-10 text-center font-bold text-ivory">{qty}</span>
-              <button onClick={() => setQty((q) => Math.min(maxQty(p), q + 1))} className="w-11 h-11 grid place-items-center text-ivory hover:bg-lilacbg disabled:opacity-30" disabled={out || qty >= maxQty(p)}><Plus size={16} /></button>
+              <button onClick={() => setQty((q) => Math.min(maxQty(p, size), q + 1))} className="w-11 h-11 grid place-items-center text-ivory hover:bg-lilacbg disabled:opacity-30" disabled={blocked || qty >= maxQty(p, size)}><Plus size={16} /></button>
             </div>
           </div>
 
@@ -182,13 +191,13 @@ export default function ProductPage() {
               style={{ borderColor: wished ? '#F43F8F' : '#E7E2F0' }}>
               <Heart size={20} className={wished ? 'fill-fashionpink text-fashionpink' : 'text-muted'} />
             </button>
-            <button onClick={onAdd} disabled={out}
+            <button onClick={onAdd} disabled={blocked}
               className="flex-1 inline-flex items-center justify-center gap-2 rounded-full text-white px-6 py-4 font-semibold transition-all active:scale-[0.98] disabled:opacity-40"
               style={{ backgroundColor: MAROON, boxShadow: `0 8px 22px ${MAROON}44` }}>
-              {added ? <><Check size={18} /> Added to bag</> : out ? 'Out of stock' : 'Add to bag'}
+              {added ? <><Check size={18} /> Added to bag</> : out ? 'Out of stock' : sizeGone ? 'Size sold out' : 'Add to bag'}
             </button>
           </div>
-          <button onClick={onBuy} disabled={out}
+          <button onClick={onBuy} disabled={blocked}
             className="mt-3 w-full rounded-full border-2 px-6 py-3.5 font-semibold transition-all active:scale-[0.98] disabled:opacity-40"
             style={{ borderColor: MAROON, color: MAROON }}>
             Buy now
@@ -210,7 +219,7 @@ export default function ProductPage() {
             <p className="mt-3 text-sm text-muted leading-relaxed whitespace-pre-line">{p.description}</p>
             <div className="mt-5 rounded-xl border border-line overflow-hidden">
               {specs.map(([k, v], i) => (
-                <div key={k} className={cx('grid grid-cols-[130px_1fr] gap-3 px-4 py-3 text-sm', i % 2 === 0 ? 'bg-surface' : 'bg-white')}>
+                <div key={k} className={cx('grid grid-cols-[110px_minmax(0,1fr)] sm:grid-cols-[130px_minmax(0,1fr)] gap-3 px-4 py-3 text-sm', i % 2 === 0 ? 'bg-surface' : 'bg-white')}>
                   <span className="text-muted">{k}</span>
                   <span className="text-ivory font-medium">{v}</span>
                 </div>
@@ -228,12 +237,12 @@ export default function ProductPage() {
           <div className="font-display text-lg font-extrabold text-ivory">{inr(p.price)}</div>
           {off > 0 && <div className="text-[11px] text-muted line-through">{inr(p.mrp)}</div>}
         </div>
-        <button onClick={onBuy} disabled={out}
+        <button onClick={onBuy} disabled={blocked}
           className="flex-1 rounded-full text-white py-3.5 font-semibold active:scale-[0.98] disabled:opacity-40"
           style={{ backgroundColor: MAROON }}>
-          {out ? 'Out of stock' : 'Buy now'}
+          {out ? 'Out of stock' : sizeGone ? 'Size sold out' : 'Buy now'}
         </button>
-        <button onClick={onAdd} disabled={out}
+        <button onClick={onAdd} disabled={blocked}
           className="rounded-full border-2 px-5 py-3.5 font-semibold active:scale-[0.98] disabled:opacity-40"
           style={{ borderColor: MAROON, color: MAROON }}>
           {added ? <Check size={18} /> : 'Add'}

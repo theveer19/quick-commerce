@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import ProductCard from './ProductCard';
 import { fetchProducts } from '@/lib/data';
-import { outOfStock } from '@/lib/stock';
+import { outOfStock, sizeOut } from '@/lib/stock';
 
 function Skeleton() {
   return (
@@ -20,7 +20,8 @@ const colorName = (c) => String(c?.name || c || '').trim();
 export function applyFilters(rows, filters = {}, sort = 'new') {
   let out = rows;
   const { sizes = [], colors = [], price, inStock } = filters;
-  if (sizes.length) out = out.filter((p) => (p.sizes || []).some((s) => sizes.includes(String(s).trim())));
+  // a size filter only matches sizes that are actually in stock
+  if (sizes.length) out = out.filter((p) => (p.sizes || []).some((s) => sizes.includes(String(s).trim()) && !sizeOut(p, s)));
   if (colors.length) {
     const want = colors.map((c) => c.toLowerCase());
     out = out.filter((p) => (p.colors || []).some((c) => want.includes(colorName(c).toLowerCase())));

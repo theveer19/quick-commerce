@@ -9,6 +9,9 @@ import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 const blank = { name: '', category: 'women', subcategory: '', price: '', mrp: '', stock: '', sizes: '', colors: '', image: '', images: [], description: '', is_active: true };
 
+const sizeList = (sizes) => String(sizes || '').split(',').map((s) => s.trim()).filter(Boolean);
+const hasSizeQty = (ss) => ss && typeof ss === 'object' && Object.keys(ss).length > 0;
+
 // Resize + compress an image in the browser before upload. Keeps files small
 // (well under Vercel's ~4.5MB request limit) and saves storage/bandwidth.
 async function compressImage(file, maxDim = 1600, quality = 0.82) {
@@ -87,6 +90,14 @@ export default function AdminProducts() {
                         (p.stock ?? 0) === 0 ? 'bg-rose/20 text-rose' : (p.stock ?? 0) <= 5 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-mint/20 text-mint')}>
                         {p.stock ?? 0}
                       </span>
+                      {hasSizeQty(p.size_stock) && (
+                        <div className="mt-1 flex max-w-[220px] flex-wrap gap-1">
+                          {(p.sizes?.length ? p.sizes : Object.keys(p.size_stock)).map((sz) => {
+                            const n = Number(p.size_stock[sz]) || 0;
+                            return <span key={sz} className={cx('rounded px-1.5 py-0.5 text-[10px] font-semibold', n === 0 ? 'bg-rose/10 text-rose line-through' : 'bg-lilacbg text-ivory/70')}>{sz}:{n}</span>;
+                          })}
+                        </div>
+                      )}
                     </td>
                     <td className="p-4">
                       <div className="flex items-center justify-end gap-1">
@@ -148,9 +159,9 @@ function ProductModal({ initial, onClose, onSaved }) {
         ...form,
         price: Number(form.price),
         mrp: Number(form.mrp) || Number(form.price),
-        stock: Number(form.stock) || 0,
+        ...stockFields(form),
         subcategory: form.subcategory || null,
-        sizes: String(form.sizes || '').split(',').map((s) => s.trim()).filter(Boolean),
+        sizes: sizeList(form.sizes),
         colors: String(form.colors || '').split(',').map((t) => t.trim()).filter(Boolean).map((t) => {
           const [name, hex] = t.split(':').map((x) => x.trim());
           return { name: name || 'Color', hex: hex || '#cccccc' };
@@ -160,9 +171,16 @@ function ProductModal({ initial, onClose, onSaved }) {
         is_active: form.is_active !== false,
       };
       if (!payload.id) delete payload.id;
+      // Before the size-stock SQL is run the column does not exist — only send
+      // it when it is actually used, so ordinary saves keep working.
+      if (!hasSizeQty(payload.size_stock) && (initial?.size_stock === undefined || initial?.size_stock === null)) delete payload.size_stock;
       await saveProduct(payload);
       onSaved();
-    } catch (e) { setErr(e.message || 'Save failed'); setBusy(false); }
+    } catch (e) {
+      const m = e.message || 'Save failed';
+      setErr(/size_stock/.test(m) ? 'Size-wise stock is not set up yet — run supabase/2026-11-size-stock.sql in Supabase first.' : m);
+      setBusy(false);
+    }
   };
 
   return (
@@ -207,7 +225,6 @@ function ProductModal({ initial, onClose, onSaved }) {
         </div>
         <F label="Price (₹)" value={form.price} onChange={set('price')} inputMode="numeric" />
         <F label="MRP (₹)" value={form.mrp} onChange={set('mrp')} inputMode="numeric" />
-        <F label="Stock" value={form.stock} onChange={set('stock')} inputMode="numeric" />
         <div className="block">
           <span className="text-xs text-muted">Sizes</span>
           <div className="mt-1 flex flex-wrap gap-2">
@@ -239,6 +256,7 @@ function ProductModal({ initial, onClose, onSaved }) {
             className="mt-2 w-full bg-ink border border-line rounded-lg px-3 py-2 text-xs outline-none focus:border-violet" />
           {form.sizes ? <p className="mt-1 text-[11px] text-muted">Selected: {form.sizes}</p> : null}
         </div>
+        <SizeStockEditor form={form} setForm={setForm} />
         <F label="Colors (Name:#hex, comma separated)" full value={form.colors} onChange={set('colors')} placeholder="Black:#222222, White:#FFFFFF" />
         <label className="block sm:col-span-2">
           <span className="text-xs text-muted">Description</span>
@@ -334,6 +352,66 @@ function MultiImageUpload({ value = [], onChange }) {
       </div>
       {err && <p className="text-[11px] text-rose mt-1">{err}</p>}
       <p className="text-[11px] text-muted mt-1">Tip: first image is the main one. Hover a photo to “Make main”.</p>
+    </div>
+  );
+}
+
+// ── Stock: one quantity per size (or a single total when the product has no sizes) ──
+// Typing a quantity for any size switches the product to size-wise stock; the
+// total is then the sum. Leaving every size blank keeps the old single total.
+function stockFields(form) {
+  const sizes = sizeList(form.sizes);
+  const ss = form.size_stock || {};
+  const entered = sizes.some((sz) => ss[sz] !== undefined && ss[sz] !== '');
+  if (sizes.length && entered) {
+    const size_stock = {};
+    sizes.forEach((sz) => { size_stock[sz] = Math.max(0, parseInt(ss[sz], 10) || 0); });
+    return { size_stock, stock: Object.values(size_stock).reduce((a, n) => a + n, 0) };
+  }
+  return { size_stock: {}, stock: Math.max(0, parseInt(form.stock, 10) || 0) };
+}
+
+function SizeStockEditor({ form, setForm }) {
+  const sizes = sizeList(form.sizes);
+  const ss = form.size_stock || {};
+  const entered = sizes.some((sz) => ss[sz] !== undefined && ss[sz] !== '');
+  const total = sizes.reduce((a, sz) => a + (Math.max(0, parseInt(ss[sz], 10) || 0)), 0);
+  const setQty = (sz, v) => setForm((f) => ({ ...f, size_stock: { ...(f.size_stock || {}), [sz]: v.replace(/\D/g, '').slice(0, 4) } }));
+  const bump = (sz, d) => setQty(sz, String(Math.max(0, (parseInt(ss[sz], 10) || 0) + d)));
+
+  if (!sizes.length) {
+    return (
+      <F label="Stock (total pieces)" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" />
+    );
+  }
+
+  return (
+    <div className="block sm:col-span-2 rounded-xl border border-line p-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-xs font-semibold text-ivory">Stock per size</span>
+        <span className="text-xs text-muted">{entered ? <>Total: <b className="text-ivory">{total}</b> pieces</> : 'Enter pieces for each size'}</span>
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {sizes.map((sz) => {
+          const v = ss[sz] ?? '';
+          const zero = entered && (parseInt(v, 10) || 0) === 0;
+          return (
+            <div key={sz} className={cx('flex items-center gap-1 rounded-lg border px-2 py-1.5', zero ? 'border-rose/40 bg-rose/5' : 'border-line bg-ink')}>
+              <span className="w-10 shrink-0 text-xs font-bold text-ivory">{sz}</span>
+              <button type="button" onClick={() => bump(sz, -1)} className="grid h-6 w-6 place-items-center rounded-full text-muted hover:bg-lilacbg" aria-label={`Less ${sz}`}>−</button>
+              <input value={v} onChange={(e) => setQty(sz, e.target.value)} inputMode="numeric" placeholder="0"
+                className="w-full min-w-0 bg-transparent text-center text-sm font-semibold text-ivory outline-none" />
+              <button type="button" onClick={() => bump(sz, 1)} className="grid h-6 w-6 place-items-center rounded-full text-muted hover:bg-lilacbg" aria-label={`More ${sz}`}>+</button>
+            </div>
+          );
+        })}
+      </div>
+      {!entered && (
+        <div className="mt-3">
+          <F label="…or keep one total for all sizes (old way)" value={form.stock} onChange={(e) => setForm((f) => ({ ...f, stock: e.target.value.replace(/\D/g, '') }))} inputMode="numeric" />
+        </div>
+      )}
+      <p className="mt-2 text-[11px] text-muted">A size at 0 shows as sold out and customers cannot order it. Each order takes pieces from its size automatically.</p>
     </div>
   );
 }

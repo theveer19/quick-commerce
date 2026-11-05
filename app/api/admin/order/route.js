@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
 import { sendMail, deliveredEmail, EMAIL_RE } from '@/lib/mailer';
+import { releaseLines } from '@/lib/stock-server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -83,10 +84,7 @@ export async function POST(req) {
 
   // Cancelled by the shop → put the pieces back on the shelf (once).
   if (data && status === 'cancelled' && before?.status && before.status !== 'cancelled') {
-    for (const it of data.items || []) {
-      const qty = Math.max(0, Math.floor(Number(it.qty) || 0));
-      if (it.id && qty) { try { await admin.rpc('increment_stock', { p_id: it.id, p_qty: qty }); } catch {} }
-    }
+    await releaseLines(admin, data.items);   // back to the exact size
   }
 
   if (data && typeof status === 'string' && before?.status !== status) {

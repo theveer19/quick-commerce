@@ -6,7 +6,8 @@ import { getSupabaseAdmin } from '@/lib/supabase-admin';
 import { rateLimit } from '@/lib/ratelimit';
 import { phoneFromRequest } from '@/lib/session';
 import { notifyOrderStatus, withTimeout } from '@/lib/push-server';
-import { EMAIL_RE, sendMail, esc as escHtml } from '@/lib/mailer';
+import { EMAIL_RE, sendMail, ownerEmails, esc as escHtml } from '@/lib/mailer';
+import { reserveLines, releaseLines } from '@/lib/stock-server';
 import { isServiceablePin, NOT_SERVICEABLE_MSG, SITE_URL } from '@/lib/config';
 
 // Order email to the store owner (via Resend).
@@ -16,7 +17,7 @@ const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 async function notifyOrderEmail(order) {
   try {
     const key = process.env.RESEND_API_KEY;
-    const to = process.env.ORDER_NOTIFY_EMAIL || 'onetvision01@gmail.com';
+    const to = ownerEmails();
     if (!key) { console.error('[order-email] RESEND_API_KEY is not set — owner email skipped'); return; }
     const itemsHtml = (order.items || []).map((i) => `<li>${esc(i.name || 'Item')}${i.size ? ' · ' + esc(i.size) : ''}${i.color ? ' · ' + esc(i.color) : ''} × ${Number(i.qty)} — ₹${Number(i.price) * Number(i.qty)}</li>`).join('');
     const a = order.address || {};
@@ -32,7 +33,7 @@ async function notifyOrderEmail(order) {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ from, to: [to], subject: `🛍️ New order ${order.code} — ₹${order.total}`, html }),
+      body: JSON.stringify({ from, to, subject: `🛍️ New order ${order.code} — ₹${order.total}`, html }),
     });
     // Resend says WHY it refused (bad key, sandbox sender, unverified domain) —
     // put that in the Vercel logs instead of swallowing it.
@@ -51,7 +52,7 @@ async function lowStockAlert(admin, lines) {
     if (!data?.length) return;
     const rows = data.map((p) => `<li><b>${escHtml(p.name)}</b> — ${Number(p.stock) <= 0 ? '<span style="color:#DC2626">OUT OF STOCK</span>' : `only ${Number(p.stock)} left`}</li>`).join('');
     await sendMail({
-      to: process.env.ORDER_NOTIFY_EMAIL || 'onetvision01@gmail.com',
+      to: ownerEmails(),
       subject: `⚠️ Low stock: ${data.map((p) => p.name).slice(0, 2).join(', ')}${data.length > 2 ? ` +${data.length - 2} more` : ''}`,
       html: `<h2>Restock soon</h2><ul>${rows}</ul><p><a href="${SITE_URL}/admin/inventory">Open inventory →</a></p>`,
       tag: 'low-stock',
@@ -164,25 +165,19 @@ export async function POST(req) {
     // Reserve stock FIRST, atomically. If two people race for the last piece,
     // only one reservation succeeds and the other order is refused — nothing
     // out of stock can ever be ordered.
-    const reserved = [];
-    const release = async () => {
-      for (const it of reserved) {
-        try { await admin.rpc('increment_stock', { p_id: it.id, p_qty: it.qty }); } catch {}
-      }
-    };
-    for (const it of priced.lines) {
-      const { data: ok, error: rErr } = await admin.rpc('reserve_stock', { p_id: it.id, p_qty: it.qty });
-      if (rErr) {
-        // reserve_stock not installed yet — fall back to the old guarded decrement
-        try { await admin.rpc('decrement_stock', { p_id: it.id, p_qty: it.qty }); } catch {}
-        continue;
-      }
-      if (ok !== true) {
-        await release();
-        return NextResponse.json({ error: `${it.name} just went out of stock. Please remove it from your bag.` }, { status: 409 });
-      }
-      reserved.push(it);
+    // Size-tracked products are taken size by size.
+    const res = await reserveLines(admin, priced.lines);
+    if (!res.ok) {
+      const f = res.failed || {};
+      if (res.error) console.error('[orders] reserve failed', res.error.message);
+      return NextResponse.json({
+        error: f.size
+          ? `${f.name} in size ${f.size} just sold out. Please pick another size.`
+          : `${f.name || 'An item'} just went out of stock. Please remove it from your bag.`,
+      }, { status: 409 });
     }
+    const reserved = res.taken;
+    const release = () => releaseLines(admin, reserved);
 
     let { error } = await admin.from('orders').insert(row);
     if (error) {

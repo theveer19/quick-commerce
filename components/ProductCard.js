@@ -6,7 +6,7 @@ import { Plus, Star, Heart } from 'lucide-react';
 import { useCart } from '@/lib/cart';
 import { useWishlist } from '@/lib/wishlist';
 import { inr } from '@/lib/format';
-import { outOfStock } from '@/lib/stock';
+import { outOfStock, firstAvailableSize } from '@/lib/stock';
 
 export default function ProductCard({ p, index = 0 }) {
   const add = useCart((s) => s.add);
@@ -72,7 +72,7 @@ export default function ProductCard({ p, index = 0 }) {
           )}
         </div>
         <button
-          onClick={() => { if (!out) add(p, p.sizes?.[0]); }}
+          onClick={() => { if (!out) add(p, firstAvailableSize(p) ?? p.sizes?.[0]); }}
           disabled={out}
           aria-label={`Add ${p.name} to cart`}
           className="shrink-0 grid place-items-center w-9 h-9 rounded-full bg-lilacbg border border-line text-ivory hover:bg-rose hover:text-white hover:border-rose transition-all active:scale-90 disabled:opacity-40 disabled:pointer-events-none"
